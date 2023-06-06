@@ -670,3 +670,15 @@ if __name__ == "__main__":
         intensity = np.sum(mask) / mask.size
         return min(intensity * 1.5, 1.0)
 
+
+
+    def calculate_flame_intensity(self, region):
+        """Calculate flame intensity based on color and brightness"""
+        hsv = cv2.cvtColor(region, cv2.COLOR_BGR2HSV)
+        # Flame color range in HSV
+        lower_flame = np.array([0, 50, 50])
+        upper_flame = np.array([35, 255, 255])
+        mask = cv2.inRange(hsv, lower_flame, upper_flame)
+        intensity = np.sum(mask) / mask.size
+        return min(intensity * 1.5, 1.0)
+
