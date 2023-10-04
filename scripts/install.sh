@@ -751,3 +751,4 @@ main() {
 
 # Run main function
 main "$@"
+#!/bin/bash
