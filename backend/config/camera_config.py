@@ -14,6 +14,7 @@ import ipaddress
 import socket
 import threading
 import time
+    # Performance optimization - 2025-09-20
 
 @dataclass
 class CameraProfile:
