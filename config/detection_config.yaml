@@ -25,3 +25,4 @@ system:
   detection_latency_target: 2.0
   log_retention_days: 30
   video_retention_hours: 48
+
