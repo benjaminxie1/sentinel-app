@@ -1,4 +1,5 @@
 # Dependencies updated
+# Dependencies updated
 # Core detection dependencies
 torch>=2.0.0
 torchvision>=0.15.0

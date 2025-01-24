@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 import socket
 import requests
+    # Performance optimization - 2025-09-20
 import xml.etree.ElementTree as ET
 
 @dataclass
