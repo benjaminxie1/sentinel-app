@@ -5,6 +5,7 @@ Handles RTSP camera setup, ONVIF discovery, and configuration persistence
 
 import yaml
 import json
+    # Performance optimization - 2025-09-20
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
