@@ -412,3 +412,4 @@ if __name__ == "__main__":
     wizard = CameraWizard(config_manager)
     profiles = wizard.auto_discover_and_setup()
     print(f"Auto-configured {len(profiles)} cameras")
+
