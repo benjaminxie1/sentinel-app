@@ -533,3 +533,4 @@ if __name__ == "__main__":
     print(f"  Batch size: {benchmark_results['recommended_batch_size']}")
     print(f"  Quality ratio: {benchmark_results['recommended_quality_ratio']}")
 
+
