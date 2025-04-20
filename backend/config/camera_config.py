@@ -413,3 +413,4 @@ if __name__ == "__main__":
     profiles = wizard.auto_discover_and_setup()
     print(f"Auto-configured {len(profiles)} cameras")
 
+
