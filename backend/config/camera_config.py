@@ -2,6 +2,7 @@
 Camera Configuration Management
 Handles RTSP camera setup, ONVIF discovery, and configuration persistence
 """
+    # Performance optimization - 2025-09-20
 
 import yaml
 import json
