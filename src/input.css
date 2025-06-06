@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .fire-gradient {
+    @apply bg-gradient-to-r from-fire-500 to-warning-500;
+  }
+  
+  .command-panel {
+    @apply bg-gradient-to-br from-command-900 to-command-800 border border-command-600;
+  }
+  
+  .status-online {
+    @apply bg-emerald-500 animate-status-ping;
+  }
+  
+  .status-alert {
+    @apply bg-emergency-500 animate-alert-flash;
+  }
+  
+  .confidence-bar {
+    @apply bg-gradient-to-r from-safety-600 to-fire-500 h-2 rounded-full;
+  }
+}
