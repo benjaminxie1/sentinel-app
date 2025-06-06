@@ -18,14 +18,51 @@
   }
   
   .status-online {
-    @apply bg-emerald-500 animate-status-ping;
+    @apply bg-emerald-500;
+    animation: subtle-pulse 3s ease-in-out infinite;
   }
   
   .status-alert {
-    @apply bg-emergency-500 animate-alert-flash;
+    @apply bg-emergency-500;
+    animation: alert-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes subtle-pulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.8; 
+      transform: scale(1.05);
+    }
+  }
+  
+  @keyframes alert-pulse {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.7; 
+      transform: scale(1.1);
+    }
   }
   
   .confidence-bar {
     @apply bg-gradient-to-r from-safety-600 to-fire-500 h-2 rounded-full;
+  }
+  
+  .animate-slow-pulse {
+    animation: slow-pulse 4s ease-in-out infinite;
+  }
+  
+  @keyframes slow-pulse {
+    0%, 100% { 
+      opacity: 1; 
+    }
+    50% { 
+      opacity: 0.85; 
+    }
   }
 }

@@ -17,9 +17,23 @@ python-dotenv>=1.0.0
 # Logging and monitoring
 loguru>=0.7.0
 
-# Optional: Alert notifications (configure as needed)
-# twilio>=8.0.0  # SMS alerts
-# smtplib  # Built into Python - email alerts
+# Network and system monitoring
+psutil>=5.9.0
+requests>=2.31.0
+netifaces>=0.11.0
+
+# Alert notifications
+twilio>=8.0.0  # SMS alerts
+smtplib  # Built into Python - email alerts
+
+# Database
+sqlite3  # Built into Python
+
+# RTSP and camera handling
+imutils>=0.5.4
+
+# Configuration validation
+jsonschema>=4.19.0
 
 # Development and testing
 pytest>=7.4.0

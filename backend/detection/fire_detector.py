@@ -1,6 +1,6 @@
 """
 Sentinel Fire Detection Engine
-Core YOLOv8-based fire and smoke detection system
+Core YOLOv8-based fire and smoke detection system with RTSP integration
 """
 
 import cv2
@@ -10,9 +10,11 @@ from ultralytics import YOLO
 from pathlib import Path
 import time
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 import asyncio
+import threading
+from .rtsp_manager import RTSPManager, CameraConfig
 
 @dataclass
 class Detection:
@@ -42,6 +44,10 @@ class FireDetector:
         self.config = self._load_config(config_path)
         self.model = self._load_model()
         self.frame_count = 0
+        self.rtsp_manager = RTSPManager()
+        self.detection_callback: Optional[Callable] = None
+        self.is_running = False
+        self.detection_thread = None
         
     def _load_config(self, config_path: str) -> dict:
         """Load detection configuration"""
@@ -229,6 +235,85 @@ class FireDetector:
             cv2.putText(annotated, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         
         return annotated
+    
+    def add_rtsp_camera(self, camera_id: str, rtsp_url: str, username: str = None, password: str = None, fps: int = 15) -> bool:
+        """Add an RTSP camera for monitoring"""
+        config = CameraConfig(
+            camera_id=camera_id,
+            rtsp_url=rtsp_url,
+            username=username,
+            password=password,
+            fps=fps
+        )
+        return self.rtsp_manager.add_camera(config)
+    
+    def remove_rtsp_camera(self, camera_id: str) -> bool:
+        """Remove an RTSP camera"""
+        return self.rtsp_manager.remove_camera(camera_id)
+    
+    def start_monitoring(self) -> int:
+        """Start monitoring all RTSP cameras"""
+        if self.is_running:
+            return 0
+            
+        started_cameras = self.rtsp_manager.start_all()
+        if started_cameras > 0:
+            self.is_running = True
+            self.detection_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
+            self.detection_thread.start()
+            self.logger.info(f"Started monitoring {started_cameras} cameras")
+        
+        return started_cameras
+    
+    def stop_monitoring(self):
+        """Stop monitoring all cameras"""
+        self.is_running = False
+        self.rtsp_manager.stop_all()
+        if self.detection_thread:
+            self.detection_thread.join(timeout=5)
+        self.logger.info("Stopped camera monitoring")
+    
+    def set_detection_callback(self, callback: Callable[[str, DetectionResult], None]):
+        """Set callback function for detection results"""
+        self.detection_callback = callback
+    
+    def _monitoring_loop(self):
+        """Main monitoring loop for all cameras"""
+        while self.is_running:
+            try:
+                # Get frames from all cameras
+                frames = self.rtsp_manager.get_frames()
+                
+                # Process each frame for fire detection
+                for camera_id, frame in frames.items():
+                    result = self.detect_fire(frame)
+                    
+                    # Call detection callback if set
+                    if self.detection_callback and result.alert_level != 'None':
+                        self.detection_callback(camera_id, result)
+                    
+                    # Log significant detections
+                    if result.alert_level in ['P1', 'P2']:
+                        self.logger.warning(f"Camera {camera_id} - {result.alert_level}: {result.max_confidence:.2f}")
+                
+                # Small delay to prevent overwhelming the system
+                time.sleep(0.1)
+                
+            except Exception as e:
+                self.logger.error(f"Monitoring loop error: {e}")
+                time.sleep(1)
+    
+    def get_camera_status(self) -> Dict:
+        """Get status of all cameras"""
+        return self.rtsp_manager.get_all_status()
+    
+    def discover_cameras(self, timeout: int = 5) -> List[Dict]:
+        """Discover ONVIF cameras on the network"""
+        return self.rtsp_manager.discover_cameras(timeout)
+    
+    def test_rtsp_connection(self, rtsp_url: str, username: str = None, password: str = None) -> Tuple[bool, str]:
+        """Test RTSP connection before adding camera"""
+        return self.rtsp_manager.test_rtsp_url(rtsp_url, username, password)
 
 if __name__ == "__main__":
     # Test the detector

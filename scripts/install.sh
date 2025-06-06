@@ -1,0 +1,584 @@
+#!/bin/bash
+
+# Sentinel Fire Detection System - Production Installer
+# Professional deployment script for Linux systems
+
+set -e  # Exit on any error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Installation settings
+INSTALL_DIR="/opt/sentinel"
+SERVICE_USER="sentinel"
+SERVICE_NAME="sentinel-fire-detection"
+CONFIG_DIR="/etc/sentinel"
+LOG_DIR="/var/log/sentinel"
+DATA_DIR="/var/lib/sentinel"
+
+# System requirements
+MIN_RAM_GB=8
+MIN_DISK_GB=100
+REQUIRED_PYTHON_VERSION="3.10"
+
+echo -e "${BLUE}================================================================${NC}"
+echo -e "${BLUE}        Sentinel Fire Detection System - Installer v2.0        ${NC}"
+echo -e "${BLUE}================================================================${NC}"
+echo ""
+echo -e "${YELLOW}⚠️  CRITICAL SAFETY NOTICE:${NC}"
+echo -e "${YELLOW}   This is a SUPPLEMENTARY fire detection system only.${NC}"
+echo -e "${YELLOW}   Does NOT replace certified fire alarm systems.${NC}"
+echo -e "${YELLOW}   Always maintain UL-listed fire detection as primary.${NC}"
+echo ""
+
+# Function to print status messages
+print_status() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to check if running as root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        print_error "This installer must be run as root (use sudo)"
+        exit 1
+    fi
+}
+
+# Function to check system requirements
+check_system_requirements() {
+    print_status "Checking system requirements..."
+    
+    # Check OS
+    if [[ ! -f /etc/os-release ]]; then
+        print_error "Unsupported operating system"
+        exit 1
+    fi
+    
+    source /etc/os-release
+    print_status "Detected OS: $PRETTY_NAME"
+    
+    # Check architecture
+    ARCH=$(uname -m)
+    if [[ "$ARCH" != "x86_64" ]]; then
+        print_warning "Architecture $ARCH may not be fully supported"
+    fi
+    
+    # Check RAM
+    TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+    
+    if [[ $TOTAL_RAM_GB -lt $MIN_RAM_GB ]]; then
+        print_error "Insufficient RAM: ${TOTAL_RAM_GB}GB (minimum: ${MIN_RAM_GB}GB)"
+        exit 1
+    fi
+    print_status "RAM: ${TOTAL_RAM_GB}GB ✓"
+    
+    # Check disk space
+    AVAILABLE_DISK_GB=$(df / | awk 'NR==2 {print int($4/1024/1024)}')
+    if [[ $AVAILABLE_DISK_GB -lt $MIN_DISK_GB ]]; then
+        print_error "Insufficient disk space: ${AVAILABLE_DISK_GB}GB (minimum: ${MIN_DISK_GB}GB)"
+        exit 1
+    fi
+    print_status "Disk space: ${AVAILABLE_DISK_GB}GB available ✓"
+    
+    # Check GPU (optional but recommended)
+    if command -v nvidia-smi &> /dev/null; then
+        GPU_INFO=$(nvidia-smi --query-gpu=name --format=csv,noheader,nounits | head -1)
+        print_status "NVIDIA GPU detected: $GPU_INFO ✓"
+    else
+        print_warning "No NVIDIA GPU detected - CPU inference will be slower"
+    fi
+}
+
+# Function to install system dependencies
+install_system_dependencies() {
+    print_status "Installing system dependencies..."
+    
+    # Update package lists
+    if command -v apt-get &> /dev/null; then
+        apt-get update
+        
+        # Install essential packages
+        apt-get install -y \
+            python3 python3-pip python3-venv \
+            git curl wget unzip \
+            build-essential \
+            pkg-config \
+            libopencv-dev \
+            ffmpeg \
+            sqlite3 \
+            nginx \
+            ufw \
+            logrotate \
+            systemd
+        
+        # Install Python 3.10+ if not available
+        PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1,2)
+        if [[ $(echo "$PYTHON_VERSION >= $REQUIRED_PYTHON_VERSION" | bc -l) -eq 0 ]]; then
+            add-apt-repository ppa:deadsnakes/ppa -y
+            apt-get update
+            apt-get install -y python3.10 python3.10-venv python3.10-dev
+            update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+        fi
+        
+    elif command -v yum &> /dev/null; then
+        yum update -y
+        yum groupinstall -y "Development Tools"
+        yum install -y \
+            python3 python3-pip \
+            git curl wget unzip \
+            opencv-devel \
+            ffmpeg \
+            sqlite \
+            nginx \
+            firewalld \
+            systemd
+    else
+        print_error "Unsupported package manager"
+        exit 1
+    fi
+    
+    print_status "System dependencies installed ✓"
+}
+
+# Function to create system user
+create_service_user() {
+    print_status "Creating service user..."
+    
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        useradd --system --home-dir "$INSTALL_DIR" --shell /bin/bash "$SERVICE_USER"
+        print_status "Created user: $SERVICE_USER"
+    else
+        print_status "User $SERVICE_USER already exists"
+    fi
+}
+
+# Function to create directories
+create_directories() {
+    print_status "Creating directories..."
+    
+    # Create main directories
+    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$LOG_DIR"
+    mkdir -p "$DATA_DIR"
+    mkdir -p "$DATA_DIR/models"
+    mkdir -p "$DATA_DIR/datasets"
+    mkdir -p "$DATA_DIR/alerts"
+    mkdir -p "$DATA_DIR/cameras"
+    
+    # Set ownership
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR"
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$LOG_DIR"
+    
+    # Set permissions
+    chmod 755 "$INSTALL_DIR"
+    chmod 755 "$CONFIG_DIR"
+    chmod 755 "$LOG_DIR"
+    chmod 755 "$DATA_DIR"
+    
+    print_status "Directories created ✓"
+}
+
+# Function to install Rust for Tauri
+install_rust() {
+    print_status "Installing Rust toolchain..."
+    
+    if ! command -v rustc &> /dev/null; then
+        # Install Rust as service user
+        sudo -u "$SERVICE_USER" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+        
+        # Add to PATH
+        echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "/home/$SERVICE_USER/.bashrc"
+        
+        print_status "Rust installed ✓"
+    else
+        print_status "Rust already installed ✓"
+    fi
+}
+
+# Function to install Node.js
+install_nodejs() {
+    print_status "Installing Node.js..."
+    
+    if ! command -v node &> /dev/null; then
+        # Install Node.js 18+ using NodeSource
+        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+        apt-get install -y nodejs
+        
+        print_status "Node.js installed ✓"
+    else
+        NODE_VERSION=$(node --version)
+        print_status "Node.js already installed: $NODE_VERSION ✓"
+    fi
+}
+
+# Function to deploy application
+deploy_application() {
+    print_status "Deploying Sentinel application..."
+    
+    # Copy application files
+    if [[ -d "$(pwd)/backend" ]]; then
+        cp -r "$(pwd)"/* "$INSTALL_DIR/"
+    else
+        print_error "Application files not found. Run installer from project root."
+        exit 1
+    fi
+    
+    # Create Python virtual environment
+    sudo -u "$SERVICE_USER" python3 -m venv "$INSTALL_DIR/venv"
+    
+    # Install Python dependencies
+    sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/pip" install --upgrade pip
+    sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
+    
+    # Install Node dependencies and build
+    cd "$INSTALL_DIR"
+    sudo -u "$SERVICE_USER" npm install
+    
+    # Build Tauri application
+    sudo -u "$SERVICE_USER" bash -c 'source ~/.cargo/env && npm run tauri build'
+    
+    # Set ownership
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
+    
+    print_status "Application deployed ✓"
+}
+
+# Function to configure firewall
+configure_firewall() {
+    print_status "Configuring firewall..."
+    
+    if command -v ufw &> /dev/null; then
+        # Configure UFW
+        ufw --force reset
+        ufw default deny incoming
+        ufw default allow outgoing
+        
+        # Allow SSH
+        ufw allow ssh
+        
+        # Allow web interface (if needed)
+        ufw allow 8080/tcp
+        
+        # Allow RTSP cameras (common ports)
+        ufw allow 554/tcp
+        ufw allow 8554/tcp
+        
+        ufw --force enable
+        
+    elif command -v firewall-cmd &> /dev/null; then
+        # Configure firewalld
+        systemctl enable firewalld
+        systemctl start firewalld
+        
+        firewall-cmd --permanent --add-service=ssh
+        firewall-cmd --permanent --add-port=8080/tcp
+        firewall-cmd --permanent --add-port=554/tcp
+        firewall-cmd --permanent --add-port=8554/tcp
+        firewall-cmd --reload
+    fi
+    
+    print_status "Firewall configured ✓"
+}
+
+# Function to create systemd service
+create_systemd_service() {
+    print_status "Creating systemd service..."
+    
+    cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
+[Unit]
+Description=Sentinel Fire Detection System
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+Group=$SERVICE_USER
+WorkingDirectory=$INSTALL_DIR
+Environment=PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/run_sentinel.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sentinel
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=$DATA_DIR $LOG_DIR $CONFIG_DIR
+
+# Resource limits
+LimitNOFILE=65536
+MemoryLimit=4G
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    # Enable and start service
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME"
+    
+    print_status "Systemd service created ✓"
+}
+
+# Function to configure log rotation
+configure_logging() {
+    print_status "Configuring log rotation..."
+    
+    cat > "/etc/logrotate.d/sentinel" << EOF
+$LOG_DIR/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 $SERVICE_USER $SERVICE_USER
+    postrotate
+        systemctl reload $SERVICE_NAME > /dev/null 2>&1 || true
+    endscript
+}
+EOF
+    
+    print_status "Log rotation configured ✓"
+}
+
+# Function to create default configuration
+create_default_config() {
+    print_status "Creating default configuration..."
+    
+    # Detection configuration
+    cat > "$CONFIG_DIR/detection_config.yaml" << EOF
+detection:
+  thresholds:
+    immediate_alert: 0.95
+    review_queue: 0.85
+    log_only: 0.70
+  environmental:
+    fog_adjustment: -0.05
+    sunset_hours: [17, 19]
+  adaptive:
+    enabled: false
+    learning_window_days: 7
+    max_auto_adjustment: 0.05
+
+system:
+  detection_latency_target: 2.0
+  max_concurrent_cameras: 10
+  gpu_enabled: true
+  
+logging:
+  level: INFO
+  max_file_size: 100MB
+  backup_count: 10
+EOF
+    
+    # Network configuration
+    cat > "$CONFIG_DIR/network_config.yaml" << EOF
+monitor_interval: 30
+test_timeout: 5
+failover_threshold: 3
+test_targets: ['8.8.8.8', '1.1.1.1', '208.67.222.222']
+
+interface_priorities:
+  ethernet: 1
+  wifi: 2
+  cellular: 3
+EOF
+    
+    # Alert configuration template
+    cat > "$CONFIG_DIR/alerts.yaml" << EOF
+alert_config:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_username: ""
+  smtp_password: ""
+  smtp_use_tls: true
+  
+  max_retries: 3
+  retry_interval: 60
+  max_alerts_per_hour: 10
+  max_alerts_per_day: 50
+  
+  sms_providers:
+    - name: "twilio"
+      api_url: "https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+      account_sid: ""
+      auth_token: ""
+      from_number: ""
+EOF
+    
+    # Recipients template
+    cat > "$CONFIG_DIR/recipients.yaml" << EOF
+recipients:
+  - name: "admin"
+    email: "admin@example.com"
+    phone: "+1234567890"
+    alert_types: ["P1", "P2"]
+    enabled: false
+EOF
+    
+    # Camera configuration template
+    cat > "$CONFIG_DIR/cameras.yaml" << EOF
+cameras: []
+last_updated: $(date -Iseconds)
+EOF
+    
+    # Set permissions
+    chown -R root:$SERVICE_USER "$CONFIG_DIR"
+    chmod -R 640 "$CONFIG_DIR"/*.yaml
+    
+    print_status "Default configuration created ✓"
+}
+
+# Function to run health checks
+run_health_checks() {
+    print_status "Running health checks..."
+    
+    # Check Python installation
+    if sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" -c "import torch, cv2, ultralytics" &>/dev/null; then
+        print_status "Python dependencies ✓"
+    else
+        print_error "Python dependencies check failed"
+        return 1
+    fi
+    
+    # Check file permissions
+    if [[ -r "$CONFIG_DIR/detection_config.yaml" ]] && [[ -w "$LOG_DIR" ]] && [[ -w "$DATA_DIR" ]]; then
+        print_status "File permissions ✓"
+    else
+        print_error "File permissions check failed"
+        return 1
+    fi
+    
+    # Check service configuration
+    if systemctl is-enabled "$SERVICE_NAME" &>/dev/null; then
+        print_status "Service configuration ✓"
+    else
+        print_error "Service configuration check failed"
+        return 1
+    fi
+    
+    print_status "Health checks passed ✓"
+}
+
+# Function to display post-installation instructions
+show_post_install_instructions() {
+    echo ""
+    echo -e "${GREEN}================================================================${NC}"
+    echo -e "${GREEN}                Installation Completed Successfully!             ${NC}"
+    echo -e "${GREEN}================================================================${NC}"
+    echo ""
+    echo -e "${BLUE}Next Steps:${NC}"
+    echo ""
+    echo "1. Configure alert recipients:"
+    echo "   sudo nano $CONFIG_DIR/recipients.yaml"
+    echo ""
+    echo "2. Configure email/SMS settings:"
+    echo "   sudo nano $CONFIG_DIR/alerts.yaml"
+    echo ""
+    echo "3. Add RTSP cameras:"
+    echo "   sudo nano $CONFIG_DIR/cameras.yaml"
+    echo ""
+    echo "4. Start the service:"
+    echo "   sudo systemctl start $SERVICE_NAME"
+    echo ""
+    echo "5. Check service status:"
+    echo "   sudo systemctl status $SERVICE_NAME"
+    echo ""
+    echo "6. View logs:"
+    echo "   sudo journalctl -u $SERVICE_NAME -f"
+    echo ""
+    echo -e "${BLUE}Management Commands:${NC}"
+    echo "   Start:    sudo systemctl start $SERVICE_NAME"
+    echo "   Stop:     sudo systemctl stop $SERVICE_NAME"
+    echo "   Restart:  sudo systemctl restart $SERVICE_NAME"
+    echo "   Status:   sudo systemctl status $SERVICE_NAME"
+    echo ""
+    echo -e "${BLUE}Configuration Files:${NC}"
+    echo "   Detection: $CONFIG_DIR/detection_config.yaml"
+    echo "   Cameras:   $CONFIG_DIR/cameras.yaml"
+    echo "   Alerts:    $CONFIG_DIR/alerts.yaml"
+    echo "   Network:   $CONFIG_DIR/network_config.yaml"
+    echo ""
+    echo -e "${BLUE}Log Files:${NC}"
+    echo "   System:    $LOG_DIR/sentinel.log"
+    echo "   Service:   sudo journalctl -u $SERVICE_NAME"
+    echo ""
+    echo -e "${YELLOW}⚠️  IMPORTANT SAFETY REMINDER:${NC}"
+    echo -e "${YELLOW}   This system is SUPPLEMENTARY ONLY${NC}"
+    echo -e "${YELLOW}   Always maintain certified fire alarm systems${NC}"
+    echo -e "${YELLOW}   Test and verify all fire safety systems regularly${NC}"
+    echo ""
+}
+
+# Main installation function
+main() {
+    print_status "Starting Sentinel Fire Detection System installation..."
+    
+    # Check if running as root
+    check_root
+    
+    # Check system requirements
+    check_system_requirements
+    
+    # Install system dependencies
+    install_system_dependencies
+    
+    # Create service user
+    create_service_user
+    
+    # Create directories
+    create_directories
+    
+    # Install Rust
+    install_rust
+    
+    # Install Node.js
+    install_nodejs
+    
+    # Deploy application
+    deploy_application
+    
+    # Configure firewall
+    configure_firewall
+    
+    # Create systemd service
+    create_systemd_service
+    
+    # Configure logging
+    configure_logging
+    
+    # Create default configuration
+    create_default_config
+    
+    # Run health checks
+    run_health_checks
+    
+    # Show post-installation instructions
+    show_post_install_instructions
+    
+    print_status "Installation completed successfully!"
+}
+
+# Run main function
+main "$@"

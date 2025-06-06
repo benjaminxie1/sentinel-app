@@ -21,12 +21,38 @@ class SentinelCommandCenter {
     }
 
     setupEventListeners() {
+        // Use event delegation with immediate response for better UX
         document.addEventListener('click', (e) => {
-            if (e.target.dataset.view) {
-                this.switchView(e.target.dataset.view);
+            // Prevent double-clicks and ensure single execution
+            if (e.detail > 1) return;
+            
+            // Find closest element with data attributes (for nested elements)
+            const viewTarget = e.target.closest('[data-view]');
+            const actionTarget = e.target.closest('[data-action]');
+            
+            if (viewTarget?.dataset.view) {
+                e.preventDefault();
+                this.switchView(viewTarget.dataset.view);
             }
-            if (e.target.dataset.action) {
-                this.handleAction(e.target.dataset.action, e.target.dataset.id);
+            
+            if (actionTarget?.dataset.action) {
+                e.preventDefault();
+                this.handleAction(actionTarget.dataset.action, actionTarget.dataset.id);
+            }
+        });
+        
+        // Add hover feedback for better responsiveness feel
+        document.addEventListener('mouseover', (e) => {
+            const button = e.target.closest('button[data-view], button[data-action]');
+            if (button && !button.classList.contains('bg-fire-500')) {
+                button.style.transform = 'translateY(-1px)';
+            }
+        });
+        
+        document.addEventListener('mouseout', (e) => {
+            const button = e.target.closest('button[data-view], button[data-action]');
+            if (button) {
+                button.style.transform = '';
             }
         });
     }
@@ -52,7 +78,7 @@ class SentinelCommandCenter {
             <!-- Command Header -->
             <header class="h-16 bg-gradient-to-r from-command-900 via-command-800 to-safety-900 border-b border-fire-500/30 flex items-center justify-between px-6">
                 <div class="flex items-center space-x-4">
-                    <div class="w-8 h-8 fire-gradient rounded-lg flex items-center justify-center animate-pulse">
+                    <div class="w-8 h-8 fire-gradient rounded-lg flex items-center justify-center" style="animation: subtle-pulse 4s ease-in-out infinite">
                         <div class="w-4 h-4 bg-white rounded-sm"></div>
                     </div>
                     <div>
@@ -84,15 +110,15 @@ class SentinelCommandCenter {
                                 <div class="w-4 h-4 bg-current rounded-sm"></div>
                                 <span>Command Center</span>
                             </button>
-                            <button data-view="surveillance" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors">
+                            <button data-view="surveillance" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors hover-lift">
                                 <div class="w-4 h-4 bg-current rounded-sm"></div>
                                 <span>Surveillance Grid</span>
                             </button>
-                            <button data-view="incidents" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors">
+                            <button data-view="incidents" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors hover-lift">
                                 <div class="w-4 h-4 bg-current rounded-sm"></div>
                                 <span>Incident Management</span>
                             </button>
-                            <button data-view="analytics" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors">
+                            <button data-view="analytics" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors hover-lift">
                                 <div class="w-4 h-4 bg-current rounded-sm"></div>
                                 <span>Analytics Center</span>
                             </button>
@@ -102,11 +128,11 @@ class SentinelCommandCenter {
                     <div class="mb-6">
                         <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">CONFIGURATION</h2>
                         <div class="space-y-1">
-                            <button data-view="settings" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors">
+                            <button data-view="settings" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors hover-lift">
                                 <div class="w-4 h-4 bg-current rounded-sm"></div>
                                 <span>Detection Settings</span>
                             </button>
-                            <button data-view="system" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors">
+                            <button data-view="system" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-command-700 text-sm font-medium transition-colors hover-lift">
                                 <div class="w-4 h-4 bg-current rounded-sm"></div>
                                 <span>System Health</span>
                             </button>
@@ -120,21 +146,21 @@ class SentinelCommandCenter {
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-300">Detection Engine</span>
                                 <div class="flex items-center space-x-2">
-                                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-slow-pulse"></div>
                                     <span class="text-xs font-command text-emerald-400">ACTIVE</span>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-300">Camera Grid</span>
                                 <div class="flex items-center space-x-2">
-                                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-slow-pulse"></div>
                                     <span class="text-xs font-command text-emerald-400">3/3 ONLINE</span>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-300">Alert System</span>
                                 <div class="flex items-center space-x-2">
-                                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-slow-pulse"></div>
                                     <span class="text-xs font-command text-emerald-400">READY</span>
                                 </div>
                             </div>
@@ -151,7 +177,7 @@ class SentinelCommandCenter {
         
         this.renderMainContent();
         this.updateClock();
-        setInterval(() => this.updateClock(), 1000);
+        this.intervals.push(setInterval(() => this.updateClock(), 1000));
     }
 
     renderMainContent() {
@@ -189,7 +215,7 @@ class SentinelCommandCenter {
                     <div class="command-panel rounded-xl p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">THREAT LEVEL</h3>
-                            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-slow-pulse"></div>
                         </div>
                         <div class="text-3xl font-bold font-command text-emerald-400 mb-1">LOW</div>
                         <div class="text-xs text-gray-500">No active threats detected</div>
@@ -198,7 +224,7 @@ class SentinelCommandCenter {
                     <div class="command-panel rounded-xl p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">ACTIVE CAMERAS</h3>
-                            <div class="w-3 h-3 bg-fire-500 rounded-full animate-pulse"></div>
+                            <div class="w-3 h-3 bg-fire-500 rounded-full animate-slow-pulse"></div>
                         </div>
                         <div class="text-3xl font-bold font-command text-white mb-1" id="camera-count">3</div>
                         <div class="text-xs text-gray-500">All systems operational</div>
@@ -207,7 +233,7 @@ class SentinelCommandCenter {
                     <div class="command-panel rounded-xl p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">ALERTS TODAY</h3>
-                            <div class="w-3 h-3 bg-warning-500 rounded-full animate-pulse"></div>
+                            <div class="w-3 h-3 bg-warning-500 rounded-full animate-slow-pulse"></div>
                         </div>
                         <div class="text-3xl font-bold font-command text-warning-400 mb-1" id="alert-count">0</div>
                         <div class="text-xs text-gray-500">Last 24 hours</div>
@@ -216,7 +242,7 @@ class SentinelCommandCenter {
                     <div class="command-panel rounded-xl p-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">SYSTEM UPTIME</h3>
-                            <div class="w-3 h-3 bg-safety-500 rounded-full animate-pulse"></div>
+                            <div class="w-3 h-3 bg-safety-500 rounded-full animate-slow-pulse"></div>
                         </div>
                         <div class="text-3xl font-bold font-command text-safety-400 mb-1">99.9%</div>
                         <div class="text-xs text-gray-500">Operational excellence</div>
@@ -268,7 +294,7 @@ class SentinelCommandCenter {
                 <!-- Live Activity Feed -->
                 <div class="command-panel rounded-xl p-6">
                     <h3 class="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                        <div class="w-5 h-5 bg-emerald-500 rounded animate-pulse"></div>
+                        <div class="w-5 h-5 bg-emerald-500 rounded animate-slow-pulse"></div>
                         <span>LIVE ACTIVITY FEED</span>
                     </h3>
                     <div class="space-y-3 max-h-80 overflow-auto" id="activity-feed">
@@ -314,7 +340,7 @@ class SentinelCommandCenter {
                             <p class="text-sm text-gray-400">${location}</p>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <div class="w-2 h-2 bg-${statusColor}-500 rounded-full animate-pulse"></div>
+                            <div class="w-2 h-2 bg-${statusColor}-500 rounded-full animate-slow-pulse"></div>
                             <span class="text-xs font-command text-${statusColor}-400 uppercase">${status}</span>
                         </div>
                     </div>
@@ -347,7 +373,7 @@ class SentinelCommandCenter {
                 <div class="command-panel rounded-xl p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-white">ACTIVE INCIDENTS</h3>
-                        <button data-action="clear-alerts" class="bg-fire-500 hover:bg-fire-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                        <button data-action="clear-alerts" class="bg-fire-500 hover:bg-fire-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover-lift">
                             ACKNOWLEDGE ALL
                         </button>
                     </div>
@@ -567,7 +593,7 @@ class SentinelCommandCenter {
             <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-300">${label}</span>
                 <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-${color}-500 rounded-full animate-pulse"></div>
+                    <div class="w-2 h-2 bg-${color}-500 rounded-full animate-slow-pulse"></div>
                     <span class="text-xs font-command text-${color}-400">${status}</span>
                 </div>
             </div>
@@ -628,7 +654,7 @@ class SentinelCommandCenter {
             second: '2-digit'
         });
         const timeElement = document.getElementById('current-time');
-        if (timeElement) {
+        if (timeElement && timeElement.textContent !== timeString) {
             timeElement.textContent = timeString;
         }
     }
@@ -636,15 +662,15 @@ class SentinelCommandCenter {
     updateAlertDisplays() {
         const activeAlerts = this.alertData.filter(alert => alert.status === 'active').length;
         const alertCountElement = document.getElementById('alert-count');
-        if (alertCountElement) {
+        if (alertCountElement && alertCountElement.textContent !== activeAlerts.toString()) {
             alertCountElement.textContent = activeAlerts;
         }
 
-        // Update incidents list
-        const incidentsList = document.getElementById('incidents-list');
-        if (incidentsList) {
-            if (this.alertData.length === 0) {
-                incidentsList.innerHTML = `
+        // Update incidents list only if in incidents view
+        if (this.currentView === 'incidents') {
+            const incidentsList = document.getElementById('incidents-list');
+            if (incidentsList) {
+                const newContent = this.alertData.length === 0 ? `
                     <div class="text-center text-gray-500 py-12">
                         <div class="w-16 h-16 bg-emerald-500 rounded-full mx-auto mb-4 flex items-center justify-center">
                             <div class="w-8 h-8 bg-white rounded"></div>
@@ -652,9 +678,11 @@ class SentinelCommandCenter {
                         <p class="text-lg font-semibold text-emerald-400">ALL CLEAR</p>
                         <p class="text-sm">No active incidents detected</p>
                     </div>
-                `;
-            } else {
-                incidentsList.innerHTML = this.alertData.map(alert => this.renderIncidentItem(alert)).join('');
+                ` : this.alertData.map(alert => this.renderIncidentItem(alert)).join('');
+                
+                if (incidentsList.innerHTML !== newContent) {
+                    incidentsList.innerHTML = newContent;
+                }
             }
         }
     }
@@ -695,44 +723,47 @@ class SentinelCommandCenter {
     }
 
     updateActivityFeed() {
+        // Only update if in command view
+        if (this.currentView !== 'command') return;
+        
         const activityFeed = document.getElementById('activity-feed');
         if (!activityFeed) return;
 
-        if (this.alertData.length === 0) {
-            activityFeed.innerHTML = `
-                <div class="text-center text-gray-500 py-8">
-                    <div class="w-12 h-12 bg-command-700 rounded-full mx-auto mb-3 flex items-center justify-center">
-                        <div class="w-6 h-6 bg-command-600 rounded"></div>
-                    </div>
-                    <p>Monitoring all camera feeds...</p>
-                    <p class="text-sm">Alerts will appear here in real-time</p>
+        const newContent = this.alertData.length === 0 ? `
+            <div class="text-center text-gray-500 py-8">
+                <div class="w-12 h-12 bg-command-700 rounded-full mx-auto mb-3 flex items-center justify-center">
+                    <div class="w-6 h-6 bg-command-600 rounded"></div>
                 </div>
-            `;
-        } else {
-            activityFeed.innerHTML = this.alertData.slice(0, 5).map(alert => {
-                const timestamp = new Date(alert.timestamp * 1000).toLocaleTimeString();
-                const alertColors = {
-                    'P1': 'emergency',
-                    'P2': 'warning', 
-                    'P4': 'safety'
-                };
-                const color = alertColors[alert.alert_level] || 'gray';
-                
-                return `
-                    <div class="flex items-center space-x-4 p-3 bg-command-700 rounded-lg">
-                        <div class="w-3 h-3 bg-${color}-500 rounded-full animate-pulse"></div>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-white">${alert.camera_id}</span>
-                                <span class="text-xs text-gray-400 font-command">${timestamp}</span>
-                            </div>
-                            <div class="text-sm text-gray-400">
-                                ${alert.alert_level} Alert - ${(alert.confidence * 100).toFixed(1)}% confidence
-                            </div>
+                <p>Monitoring all camera feeds...</p>
+                <p class="text-sm">Alerts will appear here in real-time</p>
+            </div>
+        ` : this.alertData.slice(0, 5).map(alert => {
+            const timestamp = new Date(alert.timestamp * 1000).toLocaleTimeString();
+            const alertColors = {
+                'P1': 'emergency',
+                'P2': 'warning', 
+                'P4': 'safety'
+            };
+            const color = alertColors[alert.alert_level] || 'gray';
+            
+            return `
+                <div class="flex items-center space-x-4 p-3 bg-command-700 rounded-lg">
+                    <div class="w-3 h-3 bg-${color}-500 rounded-full animate-slow-pulse"></div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-white">${alert.camera_id}</span>
+                            <span class="text-xs text-gray-400 font-command">${timestamp}</span>
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            ${alert.alert_level} Alert - ${(alert.confidence * 100).toFixed(1)}% confidence
                         </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `;
+        }).join('');
+        
+        if (activityFeed.innerHTML !== newContent) {
+            activityFeed.innerHTML = newContent;
         }
     }
 
@@ -749,7 +780,7 @@ class SentinelCommandCenter {
     }
 
     simulateNewAlert() {
-        if (Math.random() < 0.2) { // 20% chance every 5 seconds
+        if (Math.random() < 0.1) { // Reduced to 10% chance every 5 seconds
             const cameras = ['CAM_001', 'CAM_002', 'CAM_003'];
             const levels = ['P1', 'P2', 'P4'];
             const confidences = [0.97, 0.89, 0.74];
@@ -767,18 +798,66 @@ class SentinelCommandCenter {
             
             this.alertData.unshift(newAlert);
             
-            // Keep only last 50 alerts
-            if (this.alertData.length > 50) {
-                this.alertData = this.alertData.slice(0, 50);
+            // Keep only last 25 alerts (reduced memory usage)
+            if (this.alertData.length > 25) {
+                this.alertData = this.alertData.slice(0, 25);
             }
             
-            this.updateAlertDisplays();
-            this.updateActivityFeed();
+            this.scheduleUpdate(() => {
+                this.updateAlertDisplays();
+                this.updateActivityFeed();
+            });
         }
+    }
+
+    // Performance optimization methods
+    scheduleUpdate(callback) {
+        this.pendingUpdates.add(callback);
+        if (!this.updateScheduled) {
+            this.updateScheduled = true;
+            requestAnimationFrame(() => {
+                this.pendingUpdates.forEach(update => update());
+                this.pendingUpdates.clear();
+                this.updateScheduled = false;
+            });
+        }
+    }
+
+    pauseUpdates() {
+        this.intervals.forEach(interval => clearInterval(interval));
+        this.intervals = [];
+    }
+
+    resumeUpdates() {
+        if (this.intervals.length === 0) {
+            this.intervals.push(setInterval(() => this.updateClock(), 1000));
+            this.intervals.push(setInterval(() => {
+                if (!document.hidden) {
+                    this.simulateNewAlert();
+                }
+            }, 5000));
+            this.intervals.push(setInterval(() => {
+                if (!document.hidden) {
+                    this.scheduleUpdate(() => this.updateActivityFeed());
+                }
+            }, 2000));
+        }
+    }
+
+    cleanup() {
+        this.pauseUpdates();
+        this.pendingUpdates.clear();
     }
 }
 
 // Initialize the command center when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.sentinelCommand = new SentinelCommandCenter();
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (window.sentinelCommand) {
+            window.sentinelCommand.cleanup();
+        }
+    });
 });
