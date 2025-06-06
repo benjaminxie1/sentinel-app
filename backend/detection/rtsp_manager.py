@@ -215,7 +215,11 @@ class RTSPCamera:
         try:
             parsed = urlparse(url)
             if parsed.username:
-                return f"{parsed.scheme}://***:***@{parsed.netloc}{parsed.path}"
+                # Reconstruct URL without credentials
+                netloc = parsed.hostname
+                if parsed.port:
+                    netloc += f":{parsed.port}"
+                return f"{parsed.scheme}://***:***@{netloc}{parsed.path}"
             return url
         except:
             return url
