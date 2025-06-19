@@ -1,16 +1,16 @@
 import React, { Suspense, lazy } from 'react';
+import PropTypes from 'prop-types';
 
 // Lazy load view components for better performance
 const CommandCenter = lazy(() => import('./views/CommandCenter'));
-const SurveillanceGrid = lazy(() => import('./views/SurveillanceGrid'));
+const SurveillanceGrid = lazy(() => import('./views/SurveillanceGridReal'));
 const IncidentManagement = lazy(() => import('./views/IncidentManagement'));
 const AnalyticsCenter = lazy(() => import('./views/AnalyticsCenter'));
-const DetectionSettings = lazy(() => import('./views/DetectionSettings'));
-const SystemHealth = lazy(() => import('./views/SystemHealth'));
+const DetectionSettings = lazy(() => import('./views/DetectionSettingsReal'));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center h-full">
-    <div className="w-8 h-8 fire-gradient rounded-lg flex items-center justify-center animate-slow-pulse">
+    <div className="w-8 h-8 fire-gradient rounded-lg flex items-center justify-center">
       <div className="w-4 h-4 bg-white rounded-sm"></div>
     </div>
   </div>
@@ -22,7 +22,8 @@ const MainContent = ({
   systemStatus, 
   onClearAlerts, 
   onAcknowledgeAlert,
-  isVisible 
+  isVisible,
+  connectionStatus
 }) => {
   const renderView = () => {
     const commonProps = {
@@ -30,7 +31,8 @@ const MainContent = ({
       systemStatus,
       onClearAlerts,
       onAcknowledgeAlert,
-      isVisible
+      isVisible,
+      connectionStatus
     };
 
     switch (currentView) {
@@ -44,8 +46,6 @@ const MainContent = ({
         return <AnalyticsCenter {...commonProps} />;
       case 'settings':
         return <DetectionSettings {...commonProps} />;
-      case 'system':
-        return <SystemHealth {...commonProps} />;
       default:
         return <CommandCenter {...commonProps} />;
     }
@@ -58,6 +58,32 @@ const MainContent = ({
       </Suspense>
     </main>
   );
+};
+
+MainContent.propTypes = {
+  currentView: PropTypes.string.isRequired,
+  alerts: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+    timestamp: PropTypes.number,
+    message: PropTypes.string,
+    severity: PropTypes.string
+  })).isRequired,
+  systemStatus: PropTypes.shape({
+    backend_running: PropTypes.bool,
+    python_pid: PropTypes.number,
+    last_update: PropTypes.number,
+    cameras_online: PropTypes.number,
+    detection_active: PropTypes.bool
+  }),
+  onClearAlerts: PropTypes.func.isRequired,
+  onAcknowledgeAlert: PropTypes.func.isRequired,
+  isVisible: PropTypes.bool.isRequired,
+  connectionStatus: PropTypes.shape({
+    isConnected: PropTypes.bool.isRequired,
+    lastError: PropTypes.string,
+    retryCount: PropTypes.number
+  }).isRequired
 };
 
 export default React.memo(MainContent);

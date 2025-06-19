@@ -1,0 +1,33 @@
+# Sentinel Fire Detection Configuration
+# Edit these values to tune detection behavior
+
+detection:
+  thresholds:
+    immediate_alert: 0.95    # P1 - dispatch immediately  
+    review_queue: 0.85       # P2 - human verification
+    log_only: 0.70          # P4 - data collection
+  
+  environmental:
+    fog_adjustment: -0.05    # Reduce sensitivity in poor visibility
+    sunset_hours: [17, 19]   # Higher thresholds during challenging light conditions
+    
+  adaptive:
+    enabled: true
+    learning_window_days: 7
+    max_auto_adjustment: 0.05
+
+cameras:
+  max_concurrent: 10
+  rtsp_timeout: 5
+  frame_rate: 2  # FPS for processing (not camera FPS)
+
+system:
+  detection_latency_target: 2.0  # seconds
+  log_retention_days: 30
+  video_retention_hours: 48
+  
+alerts:
+  enabled: true
+  sms_enabled: false  # Requires SMS service configuration
+  email_enabled: false  # Requires SMTP configuration
+  desktop_notifications: true

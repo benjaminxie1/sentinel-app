@@ -14,10 +14,13 @@ from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 import asyncio
 import threading
+from datetime import datetime
 try:
     from .rtsp_manager import RTSPManager, CameraConfig
+    from ..alerts.local_notification_system import LocalNotificationManager, AlertMessage
 except ImportError:
-    from rtsp_manager import RTSPManager, CameraConfig
+    from detection.rtsp_manager import RTSPManager, CameraConfig
+    from alerts.local_notification_system import LocalNotificationManager, AlertMessage
 
 @dataclass
 class Detection:
@@ -48,6 +51,7 @@ class FireDetector:
         self.model = self._load_model()
         self.frame_count = 0
         self.rtsp_manager = RTSPManager()
+        self.notification_manager = LocalNotificationManager()
         self.detection_callback: Optional[Callable] = None
         self.is_running = False
         self.detection_thread = None
@@ -100,7 +104,7 @@ class FireDetector:
             else:
                 # Use the model manager to download and create a fire detection model
                 self.logger.info("Loading pre-trained fire detection model...")
-                fire_model = model_manager.create_fire_detection_model('fire_yolov8n')
+                fire_model = model_manager.create_fire_detection_model('yolov8n_base')
                 
                 # For now, we simulate fire-specific training results
                 training_results = model_manager.simulate_fire_training(fire_model)
@@ -211,6 +215,26 @@ class FireDetector:
         else:
             return 'None'
     
+    def _send_alert(self, result: DetectionResult, frame: np.ndarray, camera_source: str) -> None:
+        """Send alert notification"""
+        try:
+            # Create alert message
+            alert = AlertMessage(
+                alert_id=f"FIRE_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{result.frame_id}",
+                alert_type=result.alert_level,
+                camera_id=camera_source,
+                message=f"Fire detected with {result.max_confidence:.1%} confidence",
+                confidence=result.max_confidence,
+                timestamp=datetime.now(),
+                location=f"Camera: {camera_source}"
+            )
+            
+            # Send alert through notification system
+            self.notification_manager.send_fire_alert(alert, frame)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to send alert: {e}")
+    
     def process_video_stream(self, video_source) -> None:
         """Process video stream (file or camera) for fire detection"""
         cap = cv2.VideoCapture(video_source)
@@ -233,7 +257,7 @@ class FireDetector:
                 # Handle detection result
                 if result.alert_level != 'None':
                     self.logger.info(f"DETECTION: {result.alert_level} - Confidence: {result.max_confidence:.2f}")
-                    # In full implementation, this would trigger alerts
+                    self._send_alert(result, frame, video_source)
                 
                 # Optional: Display frame with detections (for debugging)
                 if self.config.get('debug', {}).get('show_video', False):
@@ -349,6 +373,34 @@ class FireDetector:
     def test_rtsp_connection(self, rtsp_url: str, username: str = None, password: str = None) -> Tuple[bool, str]:
         """Test RTSP connection before adding camera"""
         return self.rtsp_manager.test_rtsp_url(rtsp_url, username, password)
+    
+    def stop_monitoring(self) -> None:
+        """Stop monitoring all cameras"""
+        if not self.is_running:
+            return
+        
+        self.is_running = False
+        self.rtsp_manager.stop_all()
+        
+        if self.detection_thread and self.detection_thread.is_alive():
+            self.detection_thread.join(timeout=5)
+        
+        # Stop notification manager
+        self.notification_manager.stop_processing()
+        
+        self.logger.info("Stopped fire detection monitoring")
+    
+    def get_alert_stats(self) -> Dict:
+        """Get alert statistics"""
+        return self.notification_manager.get_alert_stats()
+    
+    def get_recent_alerts(self, hours: int = 24) -> List[Dict]:
+        """Get recent alerts"""
+        return self.notification_manager.alert_queue.get_recent_alerts(hours)
+    
+    def acknowledge_alert(self, alert_id: str, acknowledged_by: str = "operator", notes: str = "") -> None:
+        """Acknowledge an alert"""
+        self.notification_manager.alert_queue.acknowledge_alert(alert_id, acknowledged_by, notes)
 
 if __name__ == "__main__":
     # Test the detector

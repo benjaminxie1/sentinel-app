@@ -1,0 +1,43 @@
+# Sentinel Fire Detection - Alert Recipients Configuration Template
+# Copy this file to 'recipients.yaml' and customize for your setup
+
+recipients:
+  # Primary operator - receives all alerts
+  - name: "primary_operator"
+    alert_types: ["P1", "P2", "P4"]  # P1=Critical, P2=High, P4=Log
+    enabled: true
+    desktop_notifications: true
+    sound_alerts: true
+    log_alerts: true
+    
+  # Security manager - high priority only
+  - name: "security_manager"
+    alert_types: ["P1", "P2"]
+    enabled: true
+    desktop_notifications: true
+    sound_alerts: false  # No sound for manager
+    log_alerts: true
+    
+  # Night shift operator
+  - name: "night_operator"
+    alert_types: ["P1", "P2"]
+    enabled: false  # Enable/disable based on shift
+    desktop_notifications: true
+    sound_alerts: true
+    log_alerts: true
+    
+  # System administrator - all alerts for analysis
+  - name: "system_admin"
+    alert_types: ["P1", "P2", "P4"]
+    enabled: true
+    desktop_notifications: false  # No interruptions
+    sound_alerts: false
+    log_alerts: true
+
+# Example additional recipients:
+# - name: "facility_manager"
+#   alert_types: ["P1"]  # Only critical alerts
+#   enabled: true
+#   desktop_notifications: true
+#   sound_alerts: false
+#   log_alerts: true

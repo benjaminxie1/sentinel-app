@@ -1,0 +1,27 @@
+alerts:
+  desktop_notifications: true
+  email_enabled: false
+  enabled: true
+  sms_enabled: false
+cameras:
+  frame_rate: 2
+  max_concurrent: 10
+  rtsp_timeout: 5
+detection:
+  adaptive:
+    enabled: true
+    learning_window_days: 7
+    max_auto_adjustment: 0.05
+  environmental:
+    fog_adjustment: -0.05
+    sunset_hours:
+    - 17
+    - 19
+  thresholds:
+    immediate_alert: 0.95
+    log_only: 0.7
+    review_queue: 0.85
+system:
+  detection_latency_target: 2.0
+  log_retention_days: 30
+  video_retention_hours: 48

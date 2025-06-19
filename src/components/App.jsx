@@ -1,17 +1,19 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import Header from './Header';
 import Navigation from './Navigation';
 import MainContent from './MainContent';
-import { useAlertSystem } from '../hooks/useAlertSystem';
-import { useSystemStatus } from '../hooks/useSystemStatus';
+import NotificationProvider from './shared/NotificationProvider';
+import { useRealAlertSystem } from '../hooks/useRealAlertSystem';
+import { useRealSystemStatus } from '../hooks/useRealSystemStatus';
 
 const App = () => {
   const [currentView, setCurrentView] = useState('command');
   const [isVisible, setIsVisible] = useState(true);
   
-  // Custom hooks for data management
-  const { alerts, addAlert, clearAlerts, acknowledgeAlert } = useAlertSystem();
-  const { systemStatus, updateStatus } = useSystemStatus();
+  // Real backend integration hooks
+  const { alerts, dashboardData, addAlert, clearAlerts, acknowledgeAlert, isConnected, lastError, retryCount } = useRealAlertSystem();
+  const { systemStatus, updateStatus, refreshSystemStatus } = useRealSystemStatus();
   
   // Page visibility optimization
   useEffect(() => {
@@ -40,29 +42,32 @@ const App = () => {
   }, [acknowledgeAlert]);
 
   return (
-    <div className="h-screen flex flex-col bg-command-900 text-white overflow-hidden">
-      <Header 
-        systemStatus={systemStatus}
-        alertCount={alerts.filter(a => a.status === 'active').length}
-      />
-      
-      <div className="flex-1 flex overflow-hidden">
-        <Navigation 
-          currentView={currentView}
-          onViewChange={handleViewChange}
+    <NotificationProvider>
+      <div className="h-screen flex flex-col bg-gray-950 text-gray-100 overflow-hidden">
+        <Header 
           systemStatus={systemStatus}
+          alertCount={alerts.filter(a => a.status === 'active').length}
         />
         
-        <MainContent
-          currentView={currentView}
-          alerts={alerts}
-          systemStatus={systemStatus}
-          onClearAlerts={handleClearAlerts}
-          onAcknowledgeAlert={handleAcknowledgeAlert}
-          isVisible={isVisible}
-        />
+        <div className="flex-1 flex overflow-hidden">
+          <Navigation 
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            systemStatus={systemStatus}
+          />
+          
+          <MainContent
+            currentView={currentView}
+            alerts={alerts}
+            systemStatus={systemStatus}
+            onClearAlerts={handleClearAlerts}
+            onAcknowledgeAlert={handleAcknowledgeAlert}
+            isVisible={isVisible}
+            connectionStatus={{ isConnected, lastError, retryCount }}
+          />
+        </div>
       </div>
-    </div>
+    </NotificationProvider>
   );
 };
 

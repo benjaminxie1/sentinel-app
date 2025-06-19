@@ -20,25 +20,28 @@ class FireModelManager:
         self.models_dir.mkdir(exist_ok=True)
         self.logger = logging.getLogger(__name__)
         
-        # Known fire detection models
+        # Base YOLOv8 models (NOT fire-specific - need training!)
         self.available_models = {
-            'fire_yolov8n': {
+            'yolov8n_base': {
                 'url': 'https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt',
-                'description': 'YOLOv8 Nano - General purpose (will be fine-tuned for fire)',
+                'description': '⚠️  YOLOv8 Nano - GENERAL PURPOSE (needs fire training)',
                 'size': '6.2MB',
-                'sha256': 'e4c584cdf51896b89b9ccef2b21c0a70d56d5b72c8ac7e4b0a3e0c6cb6b0e6f4'
+                'fire_trained': False,
+                'coco_classes': True
             },
-            'fire_yolov8s': {
+            'yolov8s_base': {
                 'url': 'https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8s.pt', 
-                'description': 'YOLOv8 Small - Better accuracy',
+                'description': '⚠️  YOLOv8 Small - GENERAL PURPOSE (needs fire training)',
                 'size': '21.5MB',
-                'sha256': 'f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1'
+                'fire_trained': False,
+                'coco_classes': True
             },
-            'fire_yolov8m': {
+            'yolov8m_base': {
                 'url': 'https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8m.pt',
-                'description': 'YOLOv8 Medium - Production quality',
-                'size': '49.7MB', 
-                'sha256': 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2'
+                'description': '⚠️  YOLOv8 Medium - GENERAL PURPOSE (needs fire training)',
+                'size': '49.7MB',
+                'fire_trained': False,
+                'coco_classes': True
             }
         }
         
@@ -107,23 +110,27 @@ class FireModelManager:
             return False
     
     def get_best_model(self, prefer_accuracy: bool = False) -> str:
-        """Get the best available model for fire detection"""
+        """Get the best available base model (WARNING: needs fire training!)"""
+        self.logger.warning("⚠️  Loading BASE YOLOv8 model - NOT fire-trained!")
+        self.logger.warning("⚠️  This model detects COCO objects, not fire/smoke!")
+        self.logger.warning("⚠️  You need to provide fire training data and retrain!")
+        
         if prefer_accuracy:
             # Try medium, then small, then nano
-            for model_name in ['fire_yolov8m', 'fire_yolov8s', 'fire_yolov8n']:
+            for model_name in ['yolov8m_base', 'yolov8s_base', 'yolov8n_base']:
                 try:
                     return self.download_model(model_name)
                 except Exception as e:
                     self.logger.warning(f"Failed to get {model_name}: {e}")
         else:
             # Try nano first for speed, then others
-            for model_name in ['fire_yolov8n', 'fire_yolov8s', 'fire_yolov8m']:
+            for model_name in ['yolov8n_base', 'yolov8s_base', 'yolov8m_base']:
                 try:
                     return self.download_model(model_name)
                 except Exception as e:
                     self.logger.warning(f"Failed to get {model_name}: {e}")
         
-        raise RuntimeError("Failed to download any fire detection model")
+        raise RuntimeError("Failed to download any base YOLOv8 model")
     
     def list_available_models(self) -> dict:
         """List all available models with their status"""
@@ -139,7 +146,7 @@ class FireModelManager:
             }
         return status
     
-    def create_fire_detection_model(self, base_model: str = 'fire_yolov8n') -> YOLO:
+    def create_fire_detection_model(self, base_model: str = 'yolov8n_base') -> YOLO:
         """Create a fire detection model ready for training or inference"""
         model_path = self.download_model(base_model)
         

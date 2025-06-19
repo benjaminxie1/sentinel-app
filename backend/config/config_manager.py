@@ -45,10 +45,26 @@ class ConfigManager:
     """Manages application configuration with hot-reload capability"""
     
     def __init__(self, config_path: str = "config/detection_config.yaml"):
+        # Handle both relative and absolute paths, with fallback options
         self.config_path = Path(config_path)
+        
+        # If relative path doesn't exist, try different locations
+        if not self.config_path.exists() and not self.config_path.is_absolute():
+            # Try from backend directory
+            backend_path = Path(__file__).parent.parent / config_path
+            if backend_path.exists():
+                self.config_path = backend_path
+            else:
+                # Try from project root
+                project_root = Path(__file__).parent.parent.parent / config_path
+                if project_root.exists():
+                    self.config_path = project_root
+        
         self.logger = logging.getLogger(__name__)
         self._config_cache = {}
         self._last_modified = 0
+        
+        self.logger.info(f"Config manager using path: {self.config_path.absolute()}")
         
         # Load initial configuration
         self.reload_config()
@@ -235,7 +251,7 @@ alerts:
         system = self.get_system_config()
         alerts = self.get_alert_config()
         
-        return {
+        config_data = {
             'detection_thresholds': {
                 'immediate_alert': detection.immediate_alert,
                 'review_queue': detection.review_queue,
@@ -252,6 +268,9 @@ alerts:
             },
             'last_updated': datetime.fromtimestamp(self._last_modified).isoformat()
         }
+        
+        self.logger.debug(f"Config summary: {config_data}")
+        return config_data
 
 # Global config manager instance
 config_manager = ConfigManager()

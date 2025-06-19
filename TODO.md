@@ -2,9 +2,11 @@
 
 ## 🔥 Critical Actions Required for Production
 
-### 1. Collect Fire Detection Training Data 📸 **URGENT**
+### 1. Collect Fire Detection Training Data 📸 **CRITICAL - CURRENT MODELS DON'T DETECT FIRE**
 
 **What I Need:** Fire and smoke image datasets to train the custom YOLOv8 model
+
+**⚠️ IMPORTANT:** The current system uses base YOLOv8 models from Ultralytics that detect 80 COCO classes (person, car, bicycle, etc.) but **NOT fire or smoke**. These are general-purpose object detection models, not fire detection models.
 
 **Your Tasks:**
 - [ ] **Collect 1000+ fire images** from various sources:

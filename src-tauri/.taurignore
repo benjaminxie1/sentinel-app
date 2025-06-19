@@ -1,0 +1,47 @@
+# Tauri ignore file - prevents hot reload for these paths
+# Configuration files
+../config/
+../backend/config/
+config/
+detection_config.yaml
+
+# Backend files
+../backend/
+backend/
+
+# Data and logs
+../data/
+../logs/
+data/
+logs/
+alerts/
+
+# Test data
+../test_data/
+test_data/
+
+# Models (can be large)
+../models/
+models/
+
+# Python cache
+../**/__pycache__/
+**/__pycache__/
+
+# Node modules
+../node_modules/
+node_modules/
+
+# Build artifacts
+../dist/
+../target/
+dist/
+target/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log

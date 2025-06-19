@@ -85,7 +85,7 @@ class SentinelSystem:
         
         # Initialize stream processor with detection callback
         self.stream_processor = StreamProcessor(self._detection_callback)
-        self.stream_processor.setup_test_cameras()
+        # Note: Cameras should be added via configuration or discovery
         self.logger.info("Video stream processor initialized")
         
         # Start stream processing
@@ -194,16 +194,28 @@ class APIServer:
     def get_dashboard_data(self) -> Dict[str, Any]:
         """Get dashboard data for frontend"""
         try:
-            dashboard_data = self.sentinel.alert_manager.get_dashboard_data()
+            # Get camera count from stream processor
+            camera_count = 0
+            if self.sentinel.stream_processor:
+                camera_status = self.sentinel.stream_processor.get_camera_status()
+                camera_count = len(camera_status)
+            
+            dashboard_data = self.sentinel.alert_manager.get_dashboard_data(camera_count)
             config_summary = self.sentinel.config_manager.get_config_summary()
             
-            return {
+            result = {
                 'alerts': dashboard_data,
                 'config': config_summary,
                 'timestamp': time.time()
             }
+            
+            self.logger.debug(f"Returning dashboard data: {result}")
+            return result
+            
         except Exception as e:
             self.logger.error(f"Failed to get dashboard data: {e}")
+            import traceback
+            self.logger.error(f"Full traceback: {traceback.format_exc()}")
             return {'error': str(e)}
     
     def update_threshold(self, threshold_name: str, value: float) -> bool:

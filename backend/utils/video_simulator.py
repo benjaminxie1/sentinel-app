@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import List, Optional, Callable
 import logging
 from queue import Queue
-import random
 
 class CameraSimulator:
     """Simulates a single camera feed"""
@@ -94,32 +93,12 @@ class CameraSimulator:
             cv2.putText(frame, timestamp, (10, height - 20), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
             
-            # Occasionally add a "fire-like" simulation for testing
-            if random.random() < 0.05:  # 5% chance
-                self._add_fire_simulation(frame)
+            # No fake fire simulation in production
             
             self.current_frame = frame
             self.frame_count += 1
             time.sleep(self.frame_interval)
     
-    def _add_fire_simulation(self, frame: np.ndarray):
-        """Add a simple fire-like pattern for testing"""
-        height, width = frame.shape[:2]
-        
-        # Create a random "fire" region
-        x = random.randint(50, width - 150)
-        y = random.randint(50, height - 100)
-        w = random.randint(50, 100)
-        h = random.randint(30, 80)
-        
-        # Make it orange/red (fire-like colors)
-        fire_region = frame[y:y+h, x:x+w]
-        fire_region[:, :, 0] = 0      # Blue = 0
-        fire_region[:, :, 1] = 165    # Green = 165 (orange)
-        fire_region[:, :, 2] = 255    # Red = 255
-        
-        # Add "FIRE" text for easier detection testing
-        cv2.putText(frame, "FIRE", (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 class MultiCameraSimulator:
     """Manages multiple simulated cameras"""
@@ -162,12 +141,10 @@ class MultiCameraSimulator:
         test_dir = Path("test_data")
         test_dir.mkdir(exist_ok=True)
         
-        # Add cameras (will use generated frames if videos don't exist)
-        self.add_camera("CAM_001", "test_data/outdoor_test.mp4", fps=15)
-        self.add_camera("CAM_002", "test_data/indoor_test.mp4", fps=20)
-        self.add_camera("CAM_003", "synthetic", fps=10)  # Pure synthetic
+        # No default cameras - start with clean slate
+        # Cameras should be added via configuration or discovery
         
-        self.logger.info("Created default camera setup")
+        self.logger.info("Camera setup initialized (no default cameras)")
 
 class StreamProcessor:
     """Processes multiple camera streams with detection"""

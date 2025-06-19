@@ -49,9 +49,19 @@ data/
 recordings/
 alerts/
 
-# Configuration (allow templates)
+# Configuration (allow templates, protect local configs)
 config.yaml
 local_config.yaml
+config/cameras.yaml
+config/recipients.yaml
+config/local_*
+*_local.yaml
+*_production.yaml
+
+# Alert data and images
+alerts/
+logs/alerts/
+alert_queue.db
 
 # OS
 .DS_Store

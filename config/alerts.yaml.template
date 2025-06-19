@@ -1,0 +1,56 @@
+# Sentinel Fire Detection - Local Alert Configuration Template
+# Copy this file to 'alerts.yaml' and customize for your setup
+
+alert_config:
+  # Alert method controls
+  enable_desktop_notifications: true
+  enable_sound_alerts: true
+  enable_log_files: true
+  enable_web_dashboard: true
+  
+  # Sound alert settings
+  alert_sound_file: ""  # Leave empty for system default, or specify path
+  alert_volume: 0.8     # 0.0 to 1.0
+  repeat_sound: 3       # Times to repeat for P1/P2 alerts
+  
+  # Log file settings
+  log_directory: "logs/alerts"
+  log_rotation_days: 30  # Keep alert logs for 30 days
+  
+  # Rate limiting (prevents alert spam)
+  max_alerts_per_hour: 50   # Adjust based on your environment
+  max_alerts_per_day: 200   # Maximum daily alerts
+  
+  # Retry settings for failed local notifications
+  max_retries: 3
+  retry_interval: 30  # seconds between retries
+
+# Alert recipients configuration
+# (You can also use a separate recipients.yaml file)
+recipients:
+  - name: "operator"
+    alert_types: ["P1", "P2", "P4"]
+    enabled: true
+    desktop_notifications: true
+    sound_alerts: true
+    log_alerts: true
+
+# CUSTOMIZATION GUIDE:
+# 
+# Alert Types:
+# - P1: Critical/Immediate (≥95% confidence) - Requires immediate action
+# - P2: High Priority (≥85% confidence) - Review and verify
+# - P4: Informational (≥70% confidence) - Log for analysis
+#
+# Desktop Notifications:
+# - Cross-platform system notifications
+# - Works on Windows, macOS, and Linux
+#
+# Sound Alerts:
+# - Uses system default sounds if alert_sound_file is empty
+# - Specify custom WAV/MP3 file path if desired
+#
+# Log Files:
+# - JSON format for easy parsing
+# - Rotated automatically based on log_rotation_days
+# - Stored in the specified log_directory

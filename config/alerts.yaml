@@ -1,0 +1,42 @@
+# Sentinel Fire Detection - Local Alert Configuration
+# Offline alert system using desktop notifications, sound alerts, and log files
+
+alert_config:
+  # Enable/disable alert methods
+  enable_desktop_notifications: true
+  enable_sound_alerts: true
+  enable_log_files: true
+  enable_web_dashboard: true
+  
+  # Sound alert settings
+  alert_sound_file: "alert.wav"  # Path to sound file (optional)
+  alert_volume: 0.8
+  repeat_sound: 3  # Number of times to play for P1/P2 alerts
+  
+  # Log file settings
+  log_directory: "logs/alerts"
+  log_rotation_days: 30  # Keep logs for 30 days
+  
+  # Rate limiting to prevent spam
+  max_alerts_per_hour: 50
+  max_alerts_per_day: 200
+  
+  # Retry settings for failed notifications
+  max_retries: 3
+  retry_interval: 30  # seconds
+
+# Default recipients (can be customized)
+recipients:
+  - name: "operator"
+    alert_types: ["P1", "P2", "P4"]
+    enabled: true
+    desktop_notifications: true
+    sound_alerts: true
+    log_alerts: true
+    
+  - name: "manager"
+    alert_types: ["P1", "P2"]
+    enabled: true
+    desktop_notifications: true
+    sound_alerts: false
+    log_alerts: true
