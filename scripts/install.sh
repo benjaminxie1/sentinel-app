@@ -408,33 +408,33 @@ EOF
     # Alert configuration template
     cat > "$CONFIG_DIR/alerts.yaml" << EOF
 alert_config:
-  smtp_server: "smtp.gmail.com"
-  smtp_port: 587
-  smtp_username: ""
-  smtp_password: ""
-  smtp_use_tls: true
+  # In-app alert settings
+  max_alerts_stored: 1000
+  alert_retention_days: 30
   
-  max_retries: 3
-  retry_interval: 60
-  max_alerts_per_hour: 10
-  max_alerts_per_day: 50
+  # Rate limiting (prevents alert spam)
+  max_alerts_per_hour: 50
+  max_alerts_per_day: 200
   
-  sms_providers:
-    - name: "twilio"
-      api_url: "https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
-      account_sid: ""
-      auth_token: ""
-      from_number: ""
+  # UI behavior
+  auto_popup_p1: true
+  auto_popup_p2: true
+  sound_enabled: true
+  
+  # Storage paths
+  database_path: "data/alerts.db"
+  alert_frames_dir: "data/alert_frames"
 EOF
     
-    # Recipients template
+    # User roles template
     cat > "$CONFIG_DIR/recipients.yaml" << EOF
-recipients:
-  - name: "admin"
-    email: "admin@example.com"
-    phone: "+1234567890"
-    alert_types: ["P1", "P2"]
-    enabled: false
+user_roles:
+  - name: "operator"
+    alert_types: ["P1", "P2", "P4"]
+    enabled: true
+    can_acknowledge: true
+    can_manage_cameras: true
+    can_adjust_thresholds: true
 EOF
     
     # Camera configuration template
@@ -493,19 +493,16 @@ show_post_install_instructions() {
     echo "1. Configure alert recipients:"
     echo "   sudo nano $CONFIG_DIR/recipients.yaml"
     echo ""
-    echo "2. Configure email/SMS settings:"
-    echo "   sudo nano $CONFIG_DIR/alerts.yaml"
-    echo ""
-    echo "3. Add RTSP cameras:"
+    echo "2. Add RTSP cameras:"
     echo "   sudo nano $CONFIG_DIR/cameras.yaml"
     echo ""
-    echo "4. Start the service:"
+    echo "3. Start the service:"
     echo "   sudo systemctl start $SERVICE_NAME"
     echo ""
-    echo "5. Check service status:"
+    echo "4. Check service status:"
     echo "   sudo systemctl status $SERVICE_NAME"
     echo ""
-    echo "6. View logs:"
+    echo "5. View logs:"
     echo "   sudo journalctl -u $SERVICE_NAME -f"
     echo ""
     echo -e "${BLUE}Management Commands:${NC}"
@@ -515,10 +512,11 @@ show_post_install_instructions() {
     echo "   Status:   sudo systemctl status $SERVICE_NAME"
     echo ""
     echo -e "${BLUE}Configuration Files:${NC}"
-    echo "   Detection: $CONFIG_DIR/detection_config.yaml"
-    echo "   Cameras:   $CONFIG_DIR/cameras.yaml"
-    echo "   Alerts:    $CONFIG_DIR/alerts.yaml"
-    echo "   Network:   $CONFIG_DIR/network_config.yaml"
+    echo "   Detection:  $CONFIG_DIR/detection_config.yaml"
+    echo "   Cameras:    $CONFIG_DIR/cameras.yaml"
+    echo "   Alerts:     $CONFIG_DIR/alerts.yaml"
+    echo "   User Roles: $CONFIG_DIR/recipients.yaml"
+    echo "   Network:    $CONFIG_DIR/network_config.yaml"
     echo ""
     echo -e "${BLUE}Log Files:${NC}"
     echo "   System:    $LOG_DIR/sentinel.log"

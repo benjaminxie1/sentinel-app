@@ -397,6 +397,18 @@ const SurveillanceGridReal = () => {
             <RefreshCw className={clsx('w-4 h-4 mr-2', isLoading && 'animate-spin')} />
             Refresh All
           </button>
+
+          {cameras.length > 0 && (
+            <button
+              onClick={() => {
+                cameras.forEach(camera => handleRemoveCamera(camera.id));
+              }}
+              className="btn-ghost text-sm py-2 px-4 flex items-center text-red-400 hover:text-red-300"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear All
+            </button>
+          )}
           
           <button 
             onClick={() => setIsAddCameraModalOpen(true)}

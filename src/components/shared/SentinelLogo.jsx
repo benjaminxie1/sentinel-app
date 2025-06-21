@@ -81,7 +81,7 @@ const SentinelLogo = ({
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className={className}
       >
-        <LogoIcon className={animated ? 'glow-fire' : ''} />
+        <LogoIcon className={animated ? 'glow-subtle' : ''} />
       </motion.div>
     ) : (
       <LogoIcon className={className} />
@@ -107,7 +107,7 @@ const SentinelLogo = ({
       className={clsx('flex items-center space-x-3', className)}
       {...motionProps}
     >
-      <LogoIcon className={animated ? 'glow-fire' : ''} />
+      <LogoIcon className={animated ? 'glow-subtle' : ''} />
       
       {showText && (
         <div className="flex flex-col">

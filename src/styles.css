@@ -52,40 +52,40 @@
 }
 
 @layer components {
-  /* Enhanced Button System */
+  /* Enhanced Button System - Reduced animations for industrial use */
   .btn-primary {
-    @apply bg-gray-900 hover:bg-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2 text-sm focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] will-change-transform;
+    @apply bg-gray-900 hover:bg-gray-800 text-white font-medium px-6 py-3 rounded-xl transition-all duration-150 inline-flex items-center justify-center gap-2 text-sm focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950 shadow-lg hover:shadow-xl will-change-transform;
   }
   
   .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-gray-100 font-medium px-6 py-3 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2 text-sm border border-gray-600 focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950 shadow-sm hover:shadow-md transform hover:scale-[1.02] active:scale-[0.98] will-change-transform;
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-100 font-medium px-6 py-3 rounded-xl transition-all duration-150 inline-flex items-center justify-center gap-2 text-sm border border-gray-600 focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950 shadow-sm hover:shadow-md will-change-transform;
   }
 
   .btn-ghost {
-    @apply bg-transparent hover:bg-gray-800/50 text-gray-300 hover:text-gray-100 font-medium px-4 py-2 rounded-lg transition-all duration-200 inline-flex items-center justify-center gap-2 text-sm border border-transparent hover:border-gray-700 focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950;
+    @apply bg-transparent hover:bg-gray-800/50 text-gray-300 hover:text-gray-100 font-medium px-4 py-2 rounded-lg transition-all duration-150 inline-flex items-center justify-center gap-2 text-sm border border-transparent hover:border-gray-700 focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950;
   }
 
   .btn-danger {
-    @apply bg-red-900 hover:bg-red-800 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2 text-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-950 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] will-change-transform;
+    @apply bg-red-900 hover:bg-red-800 text-white font-medium px-6 py-3 rounded-xl transition-all duration-150 inline-flex items-center justify-center gap-2 text-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-950 shadow-lg hover:shadow-xl will-change-transform;
   }
 
-  /* Glass Morphism Effects */
+  /* Glass Morphism Effects - Reduced blur for industrial readability */
   .glass {
-    @apply bg-gray-900/60 backdrop-blur-sm border border-gray-800/50 shadow-xl;
+    @apply bg-gray-900/70 backdrop-blur-xs border border-gray-800/60 shadow-xl;
   }
 
   .glass-header {
-    @apply bg-gray-900/80 backdrop-blur-md border-b border-gray-800/50;
+    @apply bg-gray-900/85 backdrop-blur-sm border-b border-gray-800/60;
   }
 
-  /* Metric Cards with Hover Effects */
+  /* Metric Cards with Subtle Hover Effects */
   .metric-card {
-    @apply glass rounded-xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-fire-500/10 hover:border-gray-700 transform hover:scale-[1.02] hover:-translate-y-1 will-change-transform;
+    @apply glass rounded-xl p-6 transition-all duration-200 hover:shadow-xl hover:border-gray-700 will-change-transform;
   }
 
-  /* Command Panel Design */
+  /* Command Panel Design - Enhanced contrast */
   .command-panel {
-    @apply glass rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:border-gray-700;
+    @apply glass rounded-xl p-6 transition-all duration-200 hover:shadow-xl hover:border-gray-600;
   }
 
   /* Section Container System */
@@ -226,9 +226,13 @@
     animation: float 6s ease-in-out infinite;
   }
 
-  /* Glow Effects */
+  /* Glow Effects - Reserved for active alerts only */
   .glow-fire {
     animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  .glow-subtle {
+    animation: glow-subtle 3s ease-in-out infinite alternate;
   }
 
   /* Typography Scale with Better Line Heights */

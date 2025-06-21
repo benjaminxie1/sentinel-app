@@ -23,6 +23,7 @@ sys.path.append(str(Path(__file__).parent))
 from main import SentinelSystem, APIServer
 from alerts.alert_manager import get_alert_manager
 from utils.system_monitor import system_monitor
+from config.camera_config import CameraConfigManager, CameraProfile
 
 class SentinelAPIServer:
     """HTTP API Server for Tauri communication"""
@@ -32,6 +33,7 @@ class SentinelAPIServer:
         self.app = web.Application()
         self.sentinel_system: Optional[SentinelSystem] = None
         self.api_handler: Optional[APIServer] = None
+        self.camera_config = CameraConfigManager()
         self.logger = self._setup_logging()
         self.is_running = False
         
@@ -68,6 +70,7 @@ class SentinelAPIServer:
         
         # Alert management
         self.app.router.add_post('/api/acknowledge', self.acknowledge_alert)
+        self.app.router.add_get('/api/alerts/{alert_id}/frame', self.get_alert_frame)
         
         # Camera feeds
         self.app.router.add_get('/api/cameras', self.get_camera_feeds)
@@ -75,6 +78,7 @@ class SentinelAPIServer:
         self.app.router.add_post('/api/cameras/discover', self.discover_cameras)
         self.app.router.add_post('/api/cameras/add', self.add_camera)
         self.app.router.add_post('/api/cameras/{camera_id}/test', self.test_camera)
+        self.app.router.add_delete('/api/cameras/{camera_id}/remove', self.remove_camera)
         
         # System status
         self.app.router.add_get('/api/status', self.get_system_status)
@@ -144,6 +148,51 @@ class SentinelAPIServer:
             
         except Exception as e:
             self.logger.error(f"Error acknowledging alert: {e}")
+            return web.json_response({'error': str(e)}, status=500)
+    
+    async def get_alert_frame(self, request: web_request.BaseRequest) -> Response:
+        """Get the saved frame for a specific alert"""
+        try:
+            alert_id = request.match_info['alert_id']
+            
+            if not self.api_handler:
+                return web.json_response({'error': 'Backend not initialized'}, status=500)
+            
+            # Get alert from database
+            alerts = self.api_handler.sentinel.alert_manager.database.get_recent_alerts(hours=24*7)
+            alert = None
+            
+            for a in alerts:
+                if a.id == alert_id:
+                    alert = a
+                    break
+            
+            if not alert:
+                return web.json_response({'error': f'Alert {alert_id} not found'}, status=404)
+            
+            if not alert.frame_path or not Path(alert.frame_path).exists():
+                return web.json_response({'error': 'No frame available for this alert'}, status=404)
+            
+            # Read the frame image
+            with open(alert.frame_path, 'rb') as f:
+                image_data = f.read()
+            
+            # Convert to base64 for JSON response
+            import base64
+            frame_base64 = base64.b64encode(image_data).decode('utf-8')
+            
+            return web.json_response({
+                'alert_id': alert_id,
+                'frame': frame_base64,
+                'timestamp': alert.timestamp,
+                'camera_id': alert.camera_id,
+                'confidence': alert.confidence,
+                'detections': alert.detections,
+                'format': 'jpeg'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error getting alert frame: {e}")
             return web.json_response({'error': str(e)}, status=500)
     
     async def get_camera_feeds(self, request: web_request.BaseRequest) -> Response:
@@ -266,23 +315,64 @@ class SentinelAPIServer:
                 if field not in data:
                     return web.json_response({'error': f'Missing required field: {field}'}, status=400)
             
-            # TODO: Implement actual RTSP camera addition
-            # For now, return success to demonstrate integration
+            if not self.sentinel_system or not self.sentinel_system.stream_processor:
+                return web.json_response({'error': 'Camera system not initialized'}, status=500)
             
-            camera_config = {
-                'camera_id': data['camera_id'],
-                'rtsp_url': data['rtsp_url'],
-                'username': data.get('username'),
-                'password': data.get('password'),
-                'enabled': data.get('enabled', True)
-            }
+            camera_id = data['camera_id']
+            rtsp_url = data['rtsp_url']
             
-            self.logger.info(f"Would add camera: {camera_config}")
+            # Check if camera already exists
+            existing_cameras = [cam.camera_id for cam in self.sentinel_system.stream_processor.simulator.cameras]
+            if camera_id in existing_cameras:
+                return web.json_response({'error': f'Camera {camera_id} already exists'}, status=400)
+            
+            # Test the RTSP connection first (skip for synthetic sources)
+            if rtsp_url not in ['synthetic', 'test']:
+                from detection.rtsp_manager import RTSPManager
+                manager = RTSPManager()
+                test_success, test_message = manager.test_rtsp_url(
+                    rtsp_url, 
+                    data.get('username'), 
+                    data.get('password')
+                )
+                
+                if not test_success:
+                    return web.json_response({
+                        'success': False,
+                        'error': f'Camera test failed: {test_message}'
+                    }, status=400)
+            
+            # Create camera profile and save to config
+            camera_profile = CameraProfile(
+                camera_id=camera_id,
+                name=data.get('name', f'Camera {camera_id}'),
+                rtsp_url=rtsp_url,
+                username=data.get('username'),
+                password=data.get('password'),
+                fps=data.get('fps', 30),
+                enabled=data.get('enabled', True),
+                location=data.get('location', 'Unknown')
+            )
+            
+            # Save to configuration
+            if not self.camera_config.add_camera(camera_profile):
+                return web.json_response({'error': 'Failed to save camera configuration'}, status=500)
+            
+            # Add camera to the simulator (for now, until full RTSP integration)
+            # Use the RTSP URL as the video source
+            camera = self.sentinel_system.stream_processor.simulator.add_camera(
+                camera_id, rtsp_url, fps=camera_profile.fps
+            )
+            
+            # Start the camera
+            camera.start()
+            
+            self.logger.info(f"Added camera {camera_id} with RTSP URL: {rtsp_url}")
             
             return web.json_response({
                 'success': True,
-                'camera_id': data['camera_id'],
-                'message': 'Camera configuration saved (simulation mode)'
+                'camera_id': camera_id,
+                'message': f'Camera {camera_id} added successfully'
             })
             
         except Exception as e:
@@ -316,6 +406,44 @@ class SentinelAPIServer:
             
         except Exception as e:
             self.logger.error(f"Error testing camera: {e}")
+            return web.json_response({'error': str(e)}, status=500)
+    
+    async def remove_camera(self, request: web_request.BaseRequest) -> Response:
+        """Remove RTSP camera from system"""
+        try:
+            camera_id = request.match_info['camera_id']
+            
+            if not self.sentinel_system or not self.sentinel_system.stream_processor:
+                return web.json_response({'error': 'Camera system not initialized'}, status=500)
+            
+            # Remove camera from simulator
+            cameras_to_remove = []
+            for camera in self.sentinel_system.stream_processor.simulator.cameras:
+                if camera.camera_id == camera_id:
+                    cameras_to_remove.append(camera)
+            
+            if not cameras_to_remove:
+                return web.json_response({'error': f'Camera {camera_id} not found'}, status=404)
+            
+            # Stop and remove the camera
+            for camera in cameras_to_remove:
+                camera.stop()
+                self.sentinel_system.stream_processor.simulator.cameras.remove(camera)
+            
+            # Remove from configuration
+            self.camera_config.remove_camera(camera_id)
+            
+            self.logger.info(f"Removed camera {camera_id}")
+            
+            return web.json_response({
+                'success': True,
+                'camera_id': camera_id,
+                'message': f'Camera {camera_id} removed successfully',
+                'timestamp': time.time()
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error removing camera: {e}")
             return web.json_response({'error': str(e)}, status=500)
     
     async def get_system_metrics(self, request: web_request.BaseRequest) -> Response:
@@ -356,11 +484,39 @@ class SentinelAPIServer:
             # Give it time to initialize
             await asyncio.sleep(2)
             
+            # Load cameras from configuration
+            await self._load_cameras_from_config()
+            
             self.logger.info("Sentinel backend system started successfully")
             
         except Exception as e:
             self.logger.error(f"Failed to start backend system: {e}")
             raise
+    
+    async def _load_cameras_from_config(self):
+        """Load cameras from configuration file on startup"""
+        try:
+            enabled_cameras = self.camera_config.get_enabled_cameras()
+            
+            if not enabled_cameras:
+                self.logger.info("No enabled cameras found in configuration")
+                return
+            
+            for camera_id, camera_profile in enabled_cameras.items():
+                try:
+                    # Add camera to simulator
+                    camera = self.sentinel_system.stream_processor.simulator.add_camera(
+                        camera_id, camera_profile.rtsp_url, fps=camera_profile.fps
+                    )
+                    camera.start()
+                    
+                    self.logger.info(f"Loaded camera from config: {camera_id}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Failed to load camera {camera_id}: {e}")
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to load cameras from config: {e}")
     
     async def start_server(self):
         """Start the API server"""

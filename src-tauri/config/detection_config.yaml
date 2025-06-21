@@ -18,9 +18,9 @@ detection:
     - 17
     - 19
   thresholds:
-    immediate_alert: 0.95
+    immediate_alert: 0.96
     log_only: 0.7
-    review_queue: 0.85
+    review_queue: 0.91
 system:
   detection_latency_target: 2.0
   log_retention_days: 30

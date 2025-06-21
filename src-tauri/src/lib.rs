@@ -192,7 +192,16 @@ async fn acknowledge_alert(
         .await
         .map_err(|e| format!("Failed to acknowledge alert: {}", e))?;
 
-    Ok(response.status().is_success())
+    if !response.status().is_success() {
+        return Err(format!("API error: {}", response.status()));
+    }
+
+    // Parse the JSON response to get the actual success value
+    let response_data: serde_json::Value = response.json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+    
+    Ok(response_data.get("success").and_then(|v| v.as_bool()).unwrap_or(false))
 }
 
 #[tauri::command]

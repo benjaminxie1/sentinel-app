@@ -4,16 +4,16 @@ import Header from './Header';
 import Navigation from './Navigation';
 import MainContent from './MainContent';
 import NotificationProvider from './shared/NotificationProvider';
-import { useRealAlertSystem } from '../hooks/useRealAlertSystem';
-import { useRealSystemStatus } from '../hooks/useRealSystemStatus';
+import { useStableAlertSystem } from '../hooks/useStableAlertSystem';
+import { useStableSystemStatus } from '../hooks/useStableSystemStatus';
 
 const App = () => {
   const [currentView, setCurrentView] = useState('command');
   const [isVisible, setIsVisible] = useState(true);
   
-  // Real backend integration hooks
-  const { alerts, dashboardData, addAlert, clearAlerts, acknowledgeAlert, isConnected, lastError, retryCount } = useRealAlertSystem();
-  const { systemStatus, updateStatus, refreshSystemStatus } = useRealSystemStatus();
+  // Stable backend integration hooks with anti-flashing
+  const { alerts, dashboardData, addAlert, clearAlerts, acknowledgeAlert, isConnected, lastError, retryCount } = useStableAlertSystem();
+  const { systemStatus, updateStatus, refreshSystemStatus, isRefreshing, isStale } = useStableSystemStatus();
   
   // Page visibility optimization
   useEffect(() => {
@@ -47,6 +47,8 @@ const App = () => {
         <Header 
           systemStatus={systemStatus}
           alertCount={alerts.filter(a => a.status === 'active').length}
+          isRefreshing={isRefreshing}
+          isStale={isStale}
         />
         
         <div className="flex-1 flex overflow-hidden">

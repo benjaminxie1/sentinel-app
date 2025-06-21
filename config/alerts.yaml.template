@@ -1,56 +1,39 @@
-# Sentinel Fire Detection - Local Alert Configuration Template
+# Sentinel Fire Detection - Application Alert Configuration Template
 # Copy this file to 'alerts.yaml' and customize for your setup
 
 alert_config:
-  # Alert method controls
-  enable_desktop_notifications: true
-  enable_sound_alerts: true
-  enable_log_files: true
-  enable_web_dashboard: true
-  
-  # Sound alert settings
-  alert_sound_file: ""  # Leave empty for system default, or specify path
-  alert_volume: 0.8     # 0.0 to 1.0
-  repeat_sound: 3       # Times to repeat for P1/P2 alerts
-  
-  # Log file settings
-  log_directory: "logs/alerts"
-  log_rotation_days: 30  # Keep alert logs for 30 days
+  # In-app alert settings
+  max_alerts_stored: 1000      # Maximum alerts to keep in database
+  alert_retention_days: 30     # Days to keep alert history
   
   # Rate limiting (prevents alert spam)
-  max_alerts_per_hour: 50   # Adjust based on your environment
-  max_alerts_per_day: 200   # Maximum daily alerts
+  max_alerts_per_hour: 50      # Adjust based on your environment
+  max_alerts_per_day: 200      # Maximum daily alerts
   
-  # Retry settings for failed local notifications
-  max_retries: 3
-  retry_interval: 30  # seconds between retries
-
-# Alert recipients configuration
-# (You can also use a separate recipients.yaml file)
-recipients:
-  - name: "operator"
-    alert_types: ["P1", "P2", "P4"]
-    enabled: true
-    desktop_notifications: true
-    sound_alerts: true
-    log_alerts: true
+  # UI behavior
+  auto_popup_p1: true          # Automatically show P1 (critical) alerts
+  auto_popup_p2: true          # Automatically show P2 (high priority) alerts
+  sound_enabled: true          # Enable sound notifications
+  
+  # Storage paths
+  database_path: "data/alerts.db"           # SQLite database for alerts
+  alert_frames_dir: "data/alert_frames"     # Directory for alert images
 
 # CUSTOMIZATION GUIDE:
 # 
 # Alert Types:
 # - P1: Critical/Immediate (≥95% confidence) - Requires immediate action
-# - P2: High Priority (≥85% confidence) - Review and verify
+# - P2: High Priority (≥85% confidence) - Review and verify  
 # - P4: Informational (≥70% confidence) - Log for analysis
 #
-# Desktop Notifications:
-# - Cross-platform system notifications
-# - Works on Windows, macOS, and Linux
+# All alerts appear in the application's alert management interface
+# No external SMS or email notifications - everything is handled in-app
 #
-# Sound Alerts:
-# - Uses system default sounds if alert_sound_file is empty
-# - Specify custom WAV/MP3 file path if desired
+# Storage:
+# - Alerts are stored locally in SQLite database
+# - Alert images are saved to local filesystem
+# - No external dependencies or API costs
 #
-# Log Files:
-# - JSON format for easy parsing
-# - Rotated automatically based on log_rotation_days
-# - Stored in the specified log_directory
+# Rate Limiting:
+# - Prevents alert spam during continuous fire conditions
+# - Adjustable based on your specific environment needs

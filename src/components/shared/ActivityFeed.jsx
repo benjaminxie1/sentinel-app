@@ -1,17 +1,51 @@
 import React, { useMemo } from 'react';
+import { AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 const ActivityItem = ({ alert }) => {
   const timestamp = new Date(alert.timestamp * 1000).toLocaleTimeString();
-  const alertColors = {
-    'P1': 'emergency',
-    'P2': 'warning', 
-    'P4': 'safety'
+  
+  const getAlertConfig = (level) => {
+    switch (level) {
+      case 'P1':
+        return { 
+          color: 'emergency', 
+          icon: AlertTriangle, 
+          bgColor: 'bg-emergency-500',
+          textColor: 'text-emergency-400'
+        };
+      case 'P2':
+        return { 
+          color: 'warning', 
+          icon: AlertCircle, 
+          bgColor: 'bg-warning-500',
+          textColor: 'text-warning-400'
+        };
+      case 'P4':
+        return { 
+          color: 'safety', 
+          icon: Info, 
+          bgColor: 'bg-success-500',
+          textColor: 'text-success-400'
+        };
+      default:
+        return { 
+          color: 'gray', 
+          icon: Info, 
+          bgColor: 'bg-gray-500',
+          textColor: 'text-gray-400'
+        };
+    }
   };
-  const color = alertColors[alert.alert_level] || 'gray';
+  
+  const config = getAlertConfig(alert.alert_level);
+  const AlertIcon = config.icon;
   
   return (
     <div className="flex items-center space-x-4 p-3 bg-gray-800/50 rounded-lg">
-      <div className={`w-3 h-3 bg-${color}-500 rounded-full`}></div>
+      <div className="flex items-center space-x-2">
+        <div className={`w-3 h-3 ${config.bgColor} rounded-full`}></div>
+        <AlertIcon className={`w-4 h-4 ${config.textColor}`} />
+      </div>
       <div className="flex-1">
         <div className="flex items-center justify-between">
           <span className="font-semibold text-gray-100">{alert.camera_id}</span>

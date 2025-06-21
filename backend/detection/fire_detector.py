@@ -15,12 +15,13 @@ from dataclasses import dataclass
 import asyncio
 import threading
 from datetime import datetime
+import os
 try:
     from .rtsp_manager import RTSPManager, CameraConfig
-    from ..alerts.local_notification_system import LocalNotificationManager, AlertMessage
+    from ..alerts.app_notification_system import AppNotificationManager as LocalNotificationManager, AlertMessage
 except ImportError:
     from detection.rtsp_manager import RTSPManager, CameraConfig
-    from alerts.local_notification_system import LocalNotificationManager, AlertMessage
+    from alerts.app_notification_system import AppNotificationManager as LocalNotificationManager, AlertMessage
 
 @dataclass
 class Detection:
@@ -294,6 +295,31 @@ class FireDetector:
             cv2.putText(annotated, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         
         return annotated
+    
+    def _save_alert_frame(self, frame: np.ndarray, detections: List[Detection], alert_id: str) -> Optional[str]:
+        """Save frame with bounding boxes for alert review"""
+        try:
+            # Create alert frames directory if it doesn't exist
+            alert_frames_dir = Path("data/alert_frames")
+            alert_frames_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Annotate frame with detections
+            annotated_frame = self._annotate_frame(frame, detections)
+            
+            # Generate filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{alert_id}_{timestamp}.jpg"
+            filepath = alert_frames_dir / filename
+            
+            # Save the frame
+            cv2.imwrite(str(filepath), annotated_frame)
+            
+            self.logger.info(f"Saved alert frame: {filepath}")
+            return str(filepath)
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save alert frame: {e}")
+            return None
     
     def add_rtsp_camera(self, camera_id: str, rtsp_url: str, username: str = None, password: str = None, fps: int = 15) -> bool:
         """Add an RTSP camera for monitoring"""

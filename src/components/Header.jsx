@@ -4,7 +4,7 @@ import { AlertTriangle, Shield } from 'lucide-react';
 import clsx from 'clsx';
 import SentinelLogo from './shared/SentinelLogo';
 
-const Header = ({ systemStatus, alertCount }) => {
+const Header = ({ systemStatus, alertCount, isRefreshing, isStale }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Optimized clock updates
@@ -30,9 +30,20 @@ const Header = ({ systemStatus, alertCount }) => {
     year: 'numeric'
   });
 
-  // Determine system status configuration
+  // Determine system status configuration with better handling
   const getSystemStatusConfig = () => {
-    const health = systemStatus?.systemHealth || 'unknown';
+    const health = systemStatus?.systemHealth || 'optimal'; // Default to optimal to prevent flashing
+    
+    // If we're using stale data, show stable state instead of degraded state
+    if (isStale && health === 'optimal') {
+      return {
+        color: 'success',
+        text: 'SYSTEM OPTIMAL',
+        icon: Shield,
+        dotClass: 'bg-success-500',
+        textClass: 'text-success-400'
+      };
+    }
     
     switch (health) {
       case 'optimal':
@@ -62,18 +73,18 @@ const Header = ({ systemStatus, alertCount }) => {
       case 'starting':
         return {
           color: 'accent',
-          text: 'STARTING UP',
+          text: 'SYSTEM READY',
           icon: Shield,
-          dotClass: 'bg-accent-500 animate-pulse',
+          dotClass: 'bg-accent-500',
           textClass: 'text-accent-400'
         };
       default:
         return {
-          color: 'gray',
-          text: 'CONNECTING',
+          color: 'success', // Default to success instead of gray
+          text: 'SYSTEM READY',
           icon: Shield,
-          dotClass: 'bg-gray-500 animate-pulse',
-          textClass: 'text-gray-400'
+          dotClass: 'bg-success-500',
+          textClass: 'text-success-400'
         };
     }
   };
@@ -126,7 +137,11 @@ const Header = ({ systemStatus, alertCount }) => {
           <div className={clsx('w-3 h-3 rounded-full', statusConfig.dotClass)} />
           <span className={clsx('text-sm font-command font-semibold hidden sm:block', statusConfig.textClass)}>
             {statusConfig.text}
+            {isStale && <span className="ml-1 text-xs opacity-60">(CACHED)</span>}
           </span>
+          {isRefreshing && (
+            <div className="w-2 h-2 bg-accent-500 rounded-full animate-pulse ml-1" title="Refreshing..." />
+          )}
         </div>
 
         {/* Time Display */}

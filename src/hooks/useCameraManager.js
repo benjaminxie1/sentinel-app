@@ -5,6 +5,7 @@ export const useCameraManager = () => {
   const [cameras, setCameras] = useState([]);
   const [frames, setFrames] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const frameUpdateRef = useRef(null);
   
   // Tauri commands
@@ -19,6 +20,7 @@ export const useCameraManager = () => {
   const refreshCameras = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const data = await getCameraFeeds();
       
       if (data && data.cameras) {
@@ -216,6 +218,7 @@ export const useCameraManager = () => {
     cameras,
     frames,
     isLoading,
+    error,
     refreshCameras,
     getCameraCurrentFrame,
     startFrameUpdates,

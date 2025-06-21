@@ -2,30 +2,8 @@
 # Copy this file to 'cameras.yaml' and customize for your setup
 
 cameras:
-  # Example camera configurations
-  - camera_id: "front_entrance"
-    name: "Front Entrance Camera"
-    rtsp_url: "rtsp://192.168.1.100:554/stream1"
-    username: "admin"                    # CHANGE THIS
-    password: "your_camera_password"     # CHANGE THIS
-    fps: 15
-    resolution: [1920, 1080]
-    enabled: true
-    location: "Front entrance lobby"
-    detection_zones: []  # Optional: define specific detection areas
-    
-  - camera_id: "warehouse_main"
-    name: "Warehouse Main Floor"
-    rtsp_url: "rtsp://192.168.1.101:554/cam/realmonitor"
-    username: "admin"                    # CHANGE THIS
-    password: "your_camera_password"     # CHANGE THIS
-    fps: 10
-    resolution: [1280, 720]
-    enabled: true
-    location: "Warehouse main floor"
-    detection_zones: []
-    
-  # Additional cameras...
+  # Add your camera configurations here
+  # Example format:
   # - camera_id: "your_camera_id"
   #   name: "Your Camera Name"
   #   rtsp_url: "rtsp://IP:PORT/path"

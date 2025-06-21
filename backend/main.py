@@ -103,6 +103,19 @@ class SentinelSystem:
                 if detection_result.alert_level != 'None':
                     alert = self.alert_manager.create_alert(camera_id, detection_result)
                     if alert:
+                        # Save the frame with bounding boxes
+                        frame_path = self.fire_detector._save_alert_frame(
+                            frame, 
+                            detection_result.detections, 
+                            alert.id
+                        )
+                        
+                        # Update alert with frame path
+                        if frame_path:
+                            alert.frame_path = frame_path
+                            # Re-save alert with frame path
+                            self.alert_manager.database.save_alert(alert)
+                        
                         self.logger.info(f"Alert created: {alert.id} ({alert.alert_level.value}) "
                                        f"Camera: {camera_id} Confidence: {alert.confidence:.2f}")
                 

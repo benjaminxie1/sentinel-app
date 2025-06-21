@@ -24,7 +24,7 @@ const MetricCard = ({ title, value, color, description, indicator }) => {
   return (
     <div className="metric-card">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
           {title}
         </h3>
         {indicator && (
@@ -34,7 +34,7 @@ const MetricCard = ({ title, value, color, description, indicator }) => {
       <div className={`text-3xl font-bold font-mono mb-1 ${colorClasses[color] || colorClasses.gray}`}>
         {value}
       </div>
-      <div className="text-xs text-gray-400">{description}</div>
+      <div className="text-xs text-gray-300">{description}</div>
     </div>
   );
 };

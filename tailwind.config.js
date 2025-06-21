@@ -122,6 +122,14 @@ module.exports = {
             boxShadow: '0 0 10px rgb(239 68 68 / 0.8), 0 0 20px rgb(239 68 68 / 0.5), 0 0 30px rgb(239 68 68 / 0.3)' 
           }
         },
+        'glow-subtle': {
+          '0%': { 
+            boxShadow: '0 0 3px rgb(239 68 68 / 0.3), 0 0 6px rgb(239 68 68 / 0.2)' 
+          },
+          '100%': { 
+            boxShadow: '0 0 6px rgb(239 68 68 / 0.5), 0 0 12px rgb(239 68 68 / 0.3)' 
+          }
+        },
         shimmer: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
