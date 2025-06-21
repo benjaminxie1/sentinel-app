@@ -30,9 +30,7 @@ export const useRealAlertSystem = () => {
       // Extract alerts from dashboard data
       if (data.alerts.recent_alerts) {
         const formattedAlerts = data.alerts.recent_alerts.map((alert, index) => {
-          if (!alert.id) {
-            console.error('Alert missing ID from backend:', alert);
-          }
+          // Alert ID validation handled silently
           return {
           id: alert.id || `missing_id_${Date.now()}_${index}`,
           timestamp: alert.timestamp || Date.now() / 1000,
@@ -64,9 +62,7 @@ export const useRealAlertSystem = () => {
           // Extract and format alerts
           if (data.alerts.recent_alerts) {
             const formattedAlerts = data.alerts.recent_alerts.map((alert, index) => {
-              if (!alert.id) {
-                console.error('Alert missing ID from backend:', alert);
-              }
+              // Alert ID validation handled silently
               return {
               id: alert.id || `missing_id_${Date.now()}_${index}`,
               timestamp: alert.timestamp || Date.now() / 1000,

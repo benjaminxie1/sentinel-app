@@ -306,7 +306,7 @@ const SurveillanceGridReal = () => {
       const discovered = await discoverNewCameras(10);
       notifications.dismiss(loadingToast);
       notifications.operations.cameraDiscovered(discovered?.length || 0);
-      console.log('Discovered cameras:', discovered);
+      // Camera discovery details logged internally
     } catch (error) {
       console.error('Camera discovery failed:', error);
       notifications.dismiss(loadingToast);

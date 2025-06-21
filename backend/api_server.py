@@ -367,7 +367,7 @@ class SentinelAPIServer:
             # Start the camera
             camera.start()
             
-            self.logger.info(f"Added camera {camera_id} with RTSP URL: {rtsp_url}")
+            # Camera added successfully
             
             return web.json_response({
                 'success': True,
@@ -433,7 +433,7 @@ class SentinelAPIServer:
             # Remove from configuration
             self.camera_config.remove_camera(camera_id)
             
-            self.logger.info(f"Removed camera {camera_id}")
+            # Camera removed successfully
             
             return web.json_response({
                 'success': True,
@@ -469,7 +469,7 @@ class SentinelAPIServer:
     async def start_backend_system(self):
         """Start the Sentinel backend system"""
         try:
-            self.logger.info("Starting Sentinel backend system...")
+            # Starting Sentinel backend system
             
             # Create and start Sentinel system
             self.sentinel_system = SentinelSystem()
@@ -487,7 +487,7 @@ class SentinelAPIServer:
             # Load cameras from configuration
             await self._load_cameras_from_config()
             
-            self.logger.info("Sentinel backend system started successfully")
+            # Backend system started
             
         except Exception as e:
             self.logger.error(f"Failed to start backend system: {e}")
@@ -499,7 +499,7 @@ class SentinelAPIServer:
             enabled_cameras = self.camera_config.get_enabled_cameras()
             
             if not enabled_cameras:
-                self.logger.info("No enabled cameras found in configuration")
+                # No enabled cameras in configuration
                 return
             
             for camera_id, camera_profile in enabled_cameras.items():
@@ -510,7 +510,7 @@ class SentinelAPIServer:
                     )
                     camera.start()
                     
-                    self.logger.info(f"Loaded camera from config: {camera_id}")
+                    # Camera loaded from config
                     
                 except Exception as e:
                     self.logger.error(f"Failed to load camera {camera_id}: {e}")
@@ -521,7 +521,7 @@ class SentinelAPIServer:
     async def start_server(self):
         """Start the API server"""
         try:
-            self.logger.info(f"Starting Sentinel API Server on port {self.port}")
+            # Starting API Server
             
             # Start backend system first
             await self.start_backend_system()
@@ -534,7 +534,7 @@ class SentinelAPIServer:
             await site.start()
             
             self.is_running = True
-            self.logger.info(f"API Server running on http://localhost:{self.port}")
+            print(f"API Server running on http://localhost:{self.port}")
             
             # Keep server running
             while self.is_running:
@@ -546,7 +546,7 @@ class SentinelAPIServer:
     
     def stop_server(self):
         """Stop the API server"""
-        self.logger.info("Stopping API server...")
+        # Stopping API server
         self.is_running = False
         
         if self.sentinel_system:

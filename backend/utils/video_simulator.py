@@ -30,14 +30,14 @@ class CameraSimulator:
         self.is_running = True
         self.thread = threading.Thread(target=self._run_simulation, daemon=True)
         self.thread.start()
-        self.logger.info(f"Camera {self.camera_id} started")
+        # Camera started
     
     def stop(self):
         """Stop the camera simulation"""
         self.is_running = False
         if hasattr(self, 'thread'):
             self.thread.join(timeout=2)
-        self.logger.info(f"Camera {self.camera_id} stopped")
+        # Camera stopped
     
     def get_frame(self) -> Optional[np.ndarray]:
         """Get the current frame"""
@@ -111,20 +111,20 @@ class MultiCameraSimulator:
         """Add a camera to the simulation"""
         camera = CameraSimulator(camera_id, video_source, fps)
         self.cameras.append(camera)
-        self.logger.info(f"Added camera {camera_id} with source: {video_source}")
+        # Camera added
         return camera
     
     def start_all(self):
         """Start all camera simulations"""
         for camera in self.cameras:
             camera.start()
-        self.logger.info(f"Started {len(self.cameras)} camera simulations")
+        # Started camera simulations
     
     def stop_all(self):
         """Stop all camera simulations"""
         for camera in self.cameras:
             camera.stop()
-        self.logger.info("Stopped all camera simulations")
+        # Stopped all camera simulations
     
     def get_camera_frames(self) -> dict:
         """Get current frames from all cameras"""
@@ -144,7 +144,7 @@ class MultiCameraSimulator:
         # No default cameras - start with clean slate
         # Cameras should be added via configuration or discovery
         
-        self.logger.info("Camera setup initialized (no default cameras)")
+        # Camera setup initialized
 
 class StreamProcessor:
     """Processes multiple camera streams with detection"""
@@ -166,7 +166,7 @@ class StreamProcessor:
         self.is_processing = True
         self.process_thread = threading.Thread(target=self._process_loop, daemon=True)
         self.process_thread.start()
-        self.logger.info("Started stream processing")
+        # Started stream processing
     
     def stop_processing(self):
         """Stop processing camera streams"""
@@ -174,7 +174,7 @@ class StreamProcessor:
         self.simulator.stop_all()
         if self.process_thread:
             self.process_thread.join(timeout=3)
-        self.logger.info("Stopped stream processing")
+        # Stopped stream processing
     
     def _process_loop(self):
         """Main processing loop"""

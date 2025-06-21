@@ -100,16 +100,16 @@ class FireDetector:
             # Try to load a fire-specific model first
             fire_model_path = "models/fire_detection.pt"
             if Path(fire_model_path).exists():
-                self.logger.info(f"Loading custom fire detection model: {fire_model_path}")
+                # Loading custom fire detection model
                 return YOLO(fire_model_path)
             else:
                 # Use the model manager to download and create a fire detection model
-                self.logger.info("Loading pre-trained fire detection model...")
+                # Loading pre-trained fire detection model
                 fire_model = model_manager.create_fire_detection_model('yolov8n_base')
                 
                 # For now, we simulate fire-specific training results
                 training_results = model_manager.simulate_fire_training(fire_model)
-                self.logger.info(f"Fire model ready - Simulated mAP50: {training_results['final_map50']:.3f}")
+                # Fire model ready
                 
                 return fire_model
         except Exception as e:
@@ -164,7 +164,7 @@ class FireDetector:
         # Log detection time
         detection_time = time.time() - start_time
         if detection_time > self.config['system']['detection_latency_target']:
-            self.logger.warning(f"Detection latency: {detection_time:.2f}s (target: {self.config['system']['detection_latency_target']}s)")
+            pass  # Detection latency exceeds target
         
         return DetectionResult(
             frame_id=self.frame_count,
@@ -198,7 +198,7 @@ class FireDetector:
         # of objects that could be on fire (this is a fallback until proper training)
         if class_name.lower() in potential_fire_classes and confidence >= 0.9:
             # Only flag as potential fire if very high confidence
-            self.logger.warning(f"High confidence {class_name} detection - potential fire indicator")
+            # High confidence detection - potential fire indicator
             return True
         
         return False
@@ -243,13 +243,13 @@ class FireDetector:
         if not cap.isOpened():
             raise ValueError(f"Could not open video source: {video_source}")
         
-        self.logger.info(f"Started processing video stream: {video_source}")
+        # Started processing video stream
         
         try:
             while True:
                 ret, frame = cap.read()
                 if not ret:
-                    self.logger.info("End of video stream")
+                    # End of video stream
                     break
                 
                 # Detect fire in frame
@@ -257,7 +257,7 @@ class FireDetector:
                 
                 # Handle detection result
                 if result.alert_level != 'None':
-                    self.logger.info(f"DETECTION: {result.alert_level} - Confidence: {result.max_confidence:.2f}")
+                    # Fire detection triggered
                     self._send_alert(result, frame, video_source)
                 
                 # Optional: Display frame with detections (for debugging)
@@ -314,7 +314,7 @@ class FireDetector:
             # Save the frame
             cv2.imwrite(str(filepath), annotated_frame)
             
-            self.logger.info(f"Saved alert frame: {filepath}")
+            # Alert frame saved
             return str(filepath)
             
         except Exception as e:
@@ -346,7 +346,7 @@ class FireDetector:
             self.is_running = True
             self.detection_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
             self.detection_thread.start()
-            self.logger.info(f"Started monitoring {started_cameras} cameras")
+            # Started monitoring cameras
         
         return started_cameras
     
@@ -356,7 +356,7 @@ class FireDetector:
         self.rtsp_manager.stop_all()
         if self.detection_thread:
             self.detection_thread.join(timeout=5)
-        self.logger.info("Stopped camera monitoring")
+        # Stopped camera monitoring
     
     def set_detection_callback(self, callback: Callable[[str, DetectionResult], None]):
         """Set callback function for detection results"""
@@ -379,7 +379,7 @@ class FireDetector:
                     
                     # Log significant detections
                     if result.alert_level in ['P1', 'P2']:
-                        self.logger.warning(f"Camera {camera_id} - {result.alert_level}: {result.max_confidence:.2f}")
+                        pass  # High priority detection
                 
                 # Small delay to prevent overwhelming the system
                 time.sleep(0.1)
@@ -414,7 +414,7 @@ class FireDetector:
         # Stop notification manager
         self.notification_manager.stop_processing()
         
-        self.logger.info("Stopped fire detection monitoring")
+        # Stopped fire detection monitoring
     
     def get_alert_stats(self) -> Dict:
         """Get alert statistics"""
