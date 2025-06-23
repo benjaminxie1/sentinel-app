@@ -18,7 +18,7 @@ detection:
     - 17
     - 19
   thresholds:
-    immediate_alert: 0.9
+    immediate_alert: 0.78
     log_only: 0.5
     review_queue: 0.6
 system:

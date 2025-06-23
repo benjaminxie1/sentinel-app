@@ -21,10 +21,10 @@ wheels/
 *.egg
 MANIFEST
 
-# PyTorch models
-*.pth
-*.pt
-models/
+# PyTorch models (allow pre-trained models for internal repo)
+# *.pth
+# *.pt
+# models/
 weights/
 
 # Virtual environments
@@ -42,24 +42,24 @@ ENV/
 src-tauri/target/
 node_modules/
 
-# Logs and data
+# Logs and data (allow alerts module for internal repo)
 logs/
 *.log
 data/
 recordings/
-alerts/
+# alerts/
 
 # Configuration (allow templates, protect local configs)
 config.yaml
 local_config.yaml
-config/cameras.yaml
-config/recipients.yaml
+# config/cameras.yaml  # Allow for internal repo
+# config/recipients.yaml  # Allow for internal repo
 config/local_*
 *_local.yaml
 *_production.yaml
 
-# Alert data and images
-alerts/
+# Alert data and images (runtime data, not code)
+# alerts/  # Allow alerts module
 logs/alerts/
 alert_queue.db
 

@@ -10,7 +10,6 @@ pillow>=10.0.0
 pyyaml>=6.0
 
 # Async and utilities
-asyncio  # Built into Python
 aiofiles>=23.0.0
 python-dotenv>=1.0.0
 
@@ -22,12 +21,7 @@ psutil>=5.9.0
 requests>=2.31.0
 netifaces>=0.11.0
 
-# No external notification dependencies - all alerts are in-app only
-
-# Database
-sqlite3  # Built into Python
-
-# API Server dependencies
+# Web API server
 aiohttp>=3.9.0
 aiohttp-cors>=0.7.0
 
@@ -37,13 +31,6 @@ onvif-zeep>=0.2.12  # ONVIF camera discovery
 
 # Configuration validation
 jsonschema>=4.19.0
-
-# Web API server
-aiohttp>=3.8.0
-aiohttp-cors>=0.7.0
-
-# ONVIF camera discovery
-onvif-zeep>=0.2.12
 
 # Development and testing
 pytest>=7.4.0

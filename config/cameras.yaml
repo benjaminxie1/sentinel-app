@@ -1,0 +1,12 @@
+cameras:
+- camera_id: FRAME_TEST_CAM
+  detection_zones: []
+  enabled: true
+  fps: 30
+  location: Unknown
+  name: Frame Test Camera
+  password: null
+  resolution: [1920, 1080]
+  rtsp_url: synthetic
+  username: null
+last_updated: '2025-06-19T19:30:47.974973'
