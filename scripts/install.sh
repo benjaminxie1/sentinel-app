@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Sentinel Fire Detection System - Production Installer
-# Professional deployment script for Linux systems
+# Professional deployment script for Linux and macOS systems
 
 set -e  # Exit on any error
 
@@ -12,13 +12,30 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Detect OS
+OS="unknown"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    OS="macos"
+elif [[ -f /etc/os-release ]]; then
+    OS="linux"
+fi
+
 # Installation settings
-INSTALL_DIR="/opt/sentinel"
-SERVICE_USER="sentinel"
-SERVICE_NAME="sentinel-fire-detection"
-CONFIG_DIR="/etc/sentinel"
-LOG_DIR="/var/log/sentinel"
-DATA_DIR="/var/lib/sentinel"
+if [[ "$OS" == "macos" ]]; then
+    INSTALL_DIR="$HOME/Applications/Sentinel"
+    SERVICE_USER="$USER"
+    SERVICE_NAME="com.sentinel.firedetection"
+    CONFIG_DIR="$HOME/Library/Application Support/Sentinel"
+    LOG_DIR="$HOME/Library/Logs/Sentinel"
+    DATA_DIR="$HOME/Library/Application Support/Sentinel/Data"
+else
+    INSTALL_DIR="/opt/sentinel"
+    SERVICE_USER="sentinel"
+    SERVICE_NAME="sentinel-fire-detection"
+    CONFIG_DIR="/etc/sentinel"
+    LOG_DIR="/var/log/sentinel"
+    DATA_DIR="/var/lib/sentinel"
+fi
 
 # System requirements
 MIN_RAM_GB=8
@@ -26,7 +43,7 @@ MIN_DISK_GB=100
 REQUIRED_PYTHON_VERSION="3.10"
 
 echo -e "${BLUE}================================================================${NC}"
-echo -e "${BLUE}        Sentinel Fire Detection System - Installer v2.0        ${NC}"
+echo -e "${BLUE}    Sentinel Fire Detection System - ${OS^} Installer v2.0    ${NC}"
 echo -e "${BLUE}================================================================${NC}"
 echo ""
 echo -e "${YELLOW}⚠️  CRITICAL SAFETY NOTICE:${NC}"
@@ -50,7 +67,7 @@ print_error() {
 
 # Function to check if running as root
 check_root() {
-    if [[ $EUID -ne 0 ]]; then
+    if [[ "$OS" == "linux" ]] && [[ $EUID -ne 0 ]]; then
         print_error "This installer must be run as root (use sudo)"
         exit 1
     fi
@@ -61,13 +78,15 @@ check_system_requirements() {
     print_status "Checking system requirements..."
     
     # Check OS
-    if [[ ! -f /etc/os-release ]]; then
+    if [[ "$OS" == "macos" ]]; then
+        print_status "Detected OS: macOS $(sw_vers -productVersion)"
+    elif [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        print_status "Detected OS: $PRETTY_NAME"
+    else
         print_error "Unsupported operating system"
         exit 1
     fi
-    
-    source /etc/os-release
-    print_status "Detected OS: $PRETTY_NAME"
     
     # Check architecture
     ARCH=$(uname -m)
@@ -76,8 +95,13 @@ check_system_requirements() {
     fi
     
     # Check RAM
-    TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+    if [[ "$OS" == "macos" ]]; then
+        TOTAL_RAM=$(sysctl -n hw.memsize)
+        TOTAL_RAM_GB=$((TOTAL_RAM / 1073741824))
+    else
+        TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+        TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+    fi
     
     if [[ $TOTAL_RAM_GB -lt $MIN_RAM_GB ]]; then
         print_error "Insufficient RAM: ${TOTAL_RAM_GB}GB (minimum: ${MIN_RAM_GB}GB)"
@@ -86,7 +110,11 @@ check_system_requirements() {
     print_status "RAM: ${TOTAL_RAM_GB}GB ✓"
     
     # Check disk space
-    AVAILABLE_DISK_GB=$(df / | awk 'NR==2 {print int($4/1024/1024)}')
+    if [[ "$OS" == "macos" ]]; then
+        AVAILABLE_DISK_GB=$(df -g / | awk 'NR==2 {print $4}')
+    else
+        AVAILABLE_DISK_GB=$(df / | awk 'NR==2 {print int($4/1024/1024)}')
+    fi
     if [[ $AVAILABLE_DISK_GB -lt $MIN_DISK_GB ]]; then
         print_error "Insufficient disk space: ${AVAILABLE_DISK_GB}GB (minimum: ${MIN_DISK_GB}GB)"
         exit 1
@@ -94,11 +122,19 @@ check_system_requirements() {
     print_status "Disk space: ${AVAILABLE_DISK_GB}GB available ✓"
     
     # Check GPU (optional but recommended)
-    if command -v nvidia-smi &> /dev/null; then
-        GPU_INFO=$(nvidia-smi --query-gpu=name --format=csv,noheader,nounits | head -1)
-        print_status "NVIDIA GPU detected: $GPU_INFO ✓"
+    if [[ "$OS" == "macos" ]]; then
+        if system_profiler SPDisplaysDataType | grep -q "Metal"; then
+            print_status "Metal GPU acceleration available ✓"
+        else
+            print_warning "No Metal GPU support detected - CPU inference will be slower"
+        fi
     else
-        print_warning "No NVIDIA GPU detected - CPU inference will be slower"
+        if command -v nvidia-smi &> /dev/null; then
+            GPU_INFO=$(nvidia-smi --query-gpu=name --format=csv,noheader,nounits | head -1)
+            print_status "NVIDIA GPU detected: $GPU_INFO ✓"
+        else
+            print_warning "No NVIDIA GPU detected - CPU inference will be slower"
+        fi
     fi
 }
 
@@ -106,7 +142,22 @@ check_system_requirements() {
 install_system_dependencies() {
     print_status "Installing system dependencies..."
     
-    # Update package lists
+    if [[ "$OS" == "macos" ]]; then
+        # Install Homebrew if not present
+        if ! command -v brew &> /dev/null; then
+            print_status "Installing Homebrew..."
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        brew update
+        
+        # Install dependencies
+        brew install python@3.10 git node rust ffmpeg opencv sqlite nginx
+        
+        print_status "System dependencies installed ✓"
+        return
+    fi
+    
+    # Linux package managers
     if command -v apt-get &> /dev/null; then
         apt-get update
         
@@ -155,6 +206,11 @@ install_system_dependencies() {
 
 # Function to create system user
 create_service_user() {
+    if [[ "$OS" == "macos" ]]; then
+        print_status "Using current user for macOS: $SERVICE_USER"
+        return
+    fi
+    
     print_status "Creating service user..."
     
     if ! id "$SERVICE_USER" &>/dev/null; then
@@ -198,11 +254,15 @@ install_rust() {
     print_status "Installing Rust toolchain..."
     
     if ! command -v rustc &> /dev/null; then
-        # Install Rust as service user
-        sudo -u "$SERVICE_USER" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
-        
-        # Add to PATH
-        echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "/home/$SERVICE_USER/.bashrc"
+        if [[ "$OS" == "macos" ]]; then
+            # Install Rust for current user
+            curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source "$HOME/.cargo/env"
+        else
+            # Install Rust as service user
+            sudo -u "$SERVICE_USER" bash -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+            echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "/home/$SERVICE_USER/.bashrc"
+        fi
         
         print_status "Rust installed ✓"
     else
@@ -213,6 +273,18 @@ install_rust() {
 # Function to install Node.js
 install_nodejs() {
     print_status "Installing Node.js..."
+    
+    if [[ "$OS" == "macos" ]]; then
+        # Node.js should be installed via brew in system dependencies
+        NODE_VERSION=$(node --version 2>/dev/null || echo "not installed")
+        if [[ "$NODE_VERSION" != "not installed" ]]; then
+            print_status "Node.js already installed: $NODE_VERSION ✓"
+        else
+            print_error "Node.js installation failed"
+            exit 1
+        fi
+        return
+    fi
     
     if ! command -v node &> /dev/null; then
         # Install Node.js 18+ using NodeSource
@@ -239,18 +311,23 @@ deploy_application() {
     fi
     
     # Create Python virtual environment
-    sudo -u "$SERVICE_USER" python3 -m venv "$INSTALL_DIR/venv"
-    
-    # Install Python dependencies
-    sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/pip" install --upgrade pip
-    sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
-    
-    # Install Node dependencies and build
-    cd "$INSTALL_DIR"
-    sudo -u "$SERVICE_USER" npm install
-    
-    # Build Tauri application
-    sudo -u "$SERVICE_USER" bash -c 'source ~/.cargo/env && npm run tauri build'
+    if [[ "$OS" == "macos" ]]; then
+        python3 -m venv "$INSTALL_DIR/venv"
+        "$INSTALL_DIR/venv/bin/pip" install --upgrade pip
+        "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
+        
+        cd "$INSTALL_DIR"
+        npm install
+        source "$HOME/.cargo/env" && npm run tauri build
+    else
+        sudo -u "$SERVICE_USER" python3 -m venv "$INSTALL_DIR/venv"
+        sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/pip" install --upgrade pip
+        sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
+        
+        cd "$INSTALL_DIR"
+        sudo -u "$SERVICE_USER" npm install
+        sudo -u "$SERVICE_USER" bash -c 'source ~/.cargo/env && npm run tauri build'
+    fi
     
     # Set ownership
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
@@ -261,6 +338,11 @@ deploy_application() {
 # Function to configure firewall
 configure_firewall() {
     print_status "Configuring firewall..."
+    
+    if [[ "$OS" == "macos" ]]; then
+        print_status "macOS firewall configuration skipped (not required for local services)"
+        return
+    fi
     
     if command -v ufw &> /dev/null; then
         # Configure UFW
@@ -295,8 +377,51 @@ configure_firewall() {
     print_status "Firewall configured ✓"
 }
 
-# Function to create systemd service
-create_systemd_service() {
+# Function to create service
+create_service() {
+    if [[ "$OS" == "macos" ]]; then
+        print_status "Creating launchd service..."
+        
+        # Create LaunchAgents directory if it doesn't exist
+        mkdir -p "$HOME/Library/LaunchAgents"
+        
+        cat > "$HOME/Library/LaunchAgents/${SERVICE_NAME}.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>${SERVICE_NAME}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$INSTALL_DIR/venv/bin/python</string>
+        <string>$INSTALL_DIR/run_sentinel.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>$INSTALL_DIR</string>
+    <key>StandardOutPath</key>
+    <string>$LOG_DIR/sentinel.log</string>
+    <key>StandardErrorPath</key>
+    <string>$LOG_DIR/sentinel-error.log</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+</dict>
+</plist>
+EOF
+        
+        print_status "Launchd service created ✓"
+        return
+    fi
+    
     print_status "Creating systemd service..."
     
     cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
@@ -343,6 +468,16 @@ EOF
 # Function to configure log rotation
 configure_logging() {
     print_status "Configuring log rotation..."
+    
+    if [[ "$OS" == "macos" ]]; then
+        # macOS uses newsyslog
+        if ! grep -q "$LOG_DIR/sentinel.log" /etc/newsyslog.conf 2>/dev/null; then
+            echo "$LOG_DIR/sentinel.log    644  30    100    @T00  J" | sudo tee -a /etc/newsyslog.conf > /dev/null
+            echo "$LOG_DIR/sentinel-error.log    644  30    100    @T00  J" | sudo tee -a /etc/newsyslog.conf > /dev/null
+        fi
+        print_status "Log rotation configured ✓"
+        return
+    fi
     
     cat > "/etc/logrotate.d/sentinel" << EOF
 $LOG_DIR/*.log {
@@ -455,11 +590,20 @@ run_health_checks() {
     print_status "Running health checks..."
     
     # Check Python installation
-    if sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" -c "import torch, cv2, ultralytics" &>/dev/null; then
-        print_status "Python dependencies ✓"
+    if [[ "$OS" == "macos" ]]; then
+        if "$INSTALL_DIR/venv/bin/python" -c "import torch, cv2, ultralytics" &>/dev/null; then
+            print_status "Python dependencies ✓"
+        else
+            print_error "Python dependencies check failed"
+            return 1
+        fi
     else
-        print_error "Python dependencies check failed"
-        return 1
+        if sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" -c "import torch, cv2, ultralytics" &>/dev/null; then
+            print_status "Python dependencies ✓"
+        else
+            print_error "Python dependencies check failed"
+            return 1
+        fi
     fi
     
     # Check file permissions
@@ -471,11 +615,20 @@ run_health_checks() {
     fi
     
     # Check service configuration
-    if systemctl is-enabled "$SERVICE_NAME" &>/dev/null; then
-        print_status "Service configuration ✓"
+    if [[ "$OS" == "macos" ]]; then
+        if [[ -f "$HOME/Library/LaunchAgents/${SERVICE_NAME}.plist" ]]; then
+            print_status "Service configuration ✓"
+        else
+            print_error "Service configuration check failed"
+            return 1
+        fi
     else
-        print_error "Service configuration check failed"
-        return 1
+        if systemctl is-enabled "$SERVICE_NAME" &>/dev/null; then
+            print_status "Service configuration ✓"
+        else
+            print_error "Service configuration check failed"
+            return 1
+        fi
     fi
     
     print_status "Health checks passed ✓"
@@ -491,25 +644,43 @@ show_post_install_instructions() {
     echo -e "${BLUE}Next Steps:${NC}"
     echo ""
     echo "1. Configure alert recipients:"
-    echo "   sudo nano $CONFIG_DIR/recipients.yaml"
+    echo "   nano $CONFIG_DIR/recipients.yaml"
     echo ""
     echo "2. Add RTSP cameras:"
-    echo "   sudo nano $CONFIG_DIR/cameras.yaml"
+    echo "   nano $CONFIG_DIR/cameras.yaml"
     echo ""
-    echo "3. Start the service:"
-    echo "   sudo systemctl start $SERVICE_NAME"
-    echo ""
-    echo "4. Check service status:"
-    echo "   sudo systemctl status $SERVICE_NAME"
-    echo ""
-    echo "5. View logs:"
-    echo "   sudo journalctl -u $SERVICE_NAME -f"
-    echo ""
-    echo -e "${BLUE}Management Commands:${NC}"
-    echo "   Start:    sudo systemctl start $SERVICE_NAME"
-    echo "   Stop:     sudo systemctl stop $SERVICE_NAME"
-    echo "   Restart:  sudo systemctl restart $SERVICE_NAME"
-    echo "   Status:   sudo systemctl status $SERVICE_NAME"
+    
+    if [[ "$OS" == "macos" ]]; then
+        echo "3. Load the service:"
+        echo "   launchctl load ~/Library/LaunchAgents/${SERVICE_NAME}.plist"
+        echo ""
+        echo "4. Check service status:"
+        echo "   launchctl list | grep sentinel"
+        echo ""
+        echo "5. View logs:"
+        echo "   tail -f \"$LOG_DIR/sentinel.log\""
+        echo ""
+        echo -e "${BLUE}Management Commands:${NC}"
+        echo "   Start:    launchctl start ${SERVICE_NAME}"
+        echo "   Stop:     launchctl stop ${SERVICE_NAME}"
+        echo "   Restart:  launchctl stop ${SERVICE_NAME} && launchctl start ${SERVICE_NAME}"
+        echo "   Unload:   launchctl unload ~/Library/LaunchAgents/${SERVICE_NAME}.plist"
+    else
+        echo "3. Start the service:"
+        echo "   sudo systemctl start $SERVICE_NAME"
+        echo ""
+        echo "4. Check service status:"
+        echo "   sudo systemctl status $SERVICE_NAME"
+        echo ""
+        echo "5. View logs:"
+        echo "   sudo journalctl -u $SERVICE_NAME -f"
+        echo ""
+        echo -e "${BLUE}Management Commands:${NC}"
+        echo "   Start:    sudo systemctl start $SERVICE_NAME"
+        echo "   Stop:     sudo systemctl stop $SERVICE_NAME"
+        echo "   Restart:  sudo systemctl restart $SERVICE_NAME"
+        echo "   Status:   sudo systemctl status $SERVICE_NAME"
+    fi
     echo ""
     echo -e "${BLUE}Configuration Files:${NC}"
     echo "   Detection:  $CONFIG_DIR/detection_config.yaml"
@@ -560,8 +731,8 @@ main() {
     # Configure firewall
     configure_firewall
     
-    # Create systemd service
-    create_systemd_service
+    # Create service (systemd or launchd)
+    create_service
     
     # Configure logging
     configure_logging

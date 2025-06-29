@@ -171,6 +171,15 @@
     @apply bg-error-500 text-white;
   }
 
+  /* Form Input Fields */
+  .input-field {
+    @apply w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-fire-500 focus:border-fire-500 transition-colors duration-200;
+  }
+
+  .input-field:focus {
+    @apply bg-gray-700 border-fire-500;
+  }
+
   /* Custom Focus Ring */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-fire-500 focus:ring-offset-2 focus:ring-offset-gray-950;
