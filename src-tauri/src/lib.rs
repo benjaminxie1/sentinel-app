@@ -67,18 +67,69 @@ async fn start_python_backend_internal(state: Arc<AppState>) -> Result<bool, Str
         return Ok(true);
     }
 
-    // Start Python backend with virtual environment
+    // Start Python backend with virtual environment - cross-platform approach
     println!("Starting Python backend from directory: {:?}", std::env::current_dir());
-    println!("Attempting to run: venv/bin/python3 backend/api_server.py");
     
-    let child = Command::new("../venv/bin/python3")
+    // Determine the correct paths based on platform
+    let (python_executable, backend_script) = if cfg!(target_os = "windows") {
+        // Windows uses Scripts directory and .exe extension
+        let python_path = std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?
+            .parent()
+            .ok_or("Failed to get parent directory")?
+            .join("venv")
+            .join("Scripts")
+            .join("python.exe");
+        
+        let script_path = std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?
+            .parent()
+            .ok_or("Failed to get parent directory")?
+            .join("backend")
+            .join("api_server.py");
+            
+        (python_path, script_path)
+    } else {
+        // Unix-like systems (Linux, macOS) use bin directory
+        let python_path = std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?
+            .parent()
+            .ok_or("Failed to get parent directory")?
+            .join("venv")
+            .join("bin")
+            .join("python3");
+        
+        let script_path = std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?
+            .parent()
+            .ok_or("Failed to get parent directory")?
+            .join("backend")
+            .join("api_server.py");
+            
+        (python_path, script_path)
+    };
+    
+    println!("Python executable: {:?}", python_executable);
+    println!("Backend script: {:?}", backend_script);
+    
+    // Verify files exist
+    if !python_executable.exists() {
+        return Err(format!("Python executable not found: {:?}", python_executable));
+    }
+    if !backend_script.exists() {
+        return Err(format!("Backend script not found: {:?}", backend_script));
+    }
+    
+    let child = Command::new(&python_executable)
         .arg("-u")  // Unbuffered output
-        .arg("../backend/api_server.py")
+        .arg(&backend_script)
         .stdout(Stdio::inherit())  // Show output for debugging
         .stderr(Stdio::inherit())  // Show errors for debugging
         .spawn()
         .map_err(|e| {
             eprintln!("Failed to start Python backend: {}", e);
+            eprintln!("Python executable: {:?}", python_executable);
+            eprintln!("Backend script: {:?}", backend_script);
             eprintln!("Current working directory: {:?}", std::env::current_dir());
             format!("Failed to start Python backend: {}", e)
         })?;
