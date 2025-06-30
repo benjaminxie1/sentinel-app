@@ -437,13 +437,20 @@ async fn test_camera(
         payload["password"] = serde_json::Value::String(pass);
     }
 
+    println!("Testing camera {} with URL: {}", camera_id, rtsp_url);
+    
     let response = state.client
         .post(&url)
         .json(&payload)
         .timeout(Duration::from_secs(15))
         .send()
         .await
-        .map_err(|e| format!("Failed to test camera: {}", e))?;
+        .map_err(|e| {
+            eprintln!("HTTP request failed: {}", e);
+            format!("Failed to test camera: {}", e)
+        })?;
+
+    println!("Response status: {}", response.status());
 
     if !response.status().is_success() {
         return Err(format!("API error: {}", response.status()));
@@ -451,8 +458,12 @@ async fn test_camera(
 
     let data: serde_json::Value = response.json()
         .await
-        .map_err(|e| format!("Failed to parse test camera response: {}", e))?;
+        .map_err(|e| {
+            eprintln!("JSON parsing failed: {}", e);
+            format!("Failed to parse test camera response: {}", e)
+        })?;
 
+    println!("Response data: {:?}", data);
     Ok(data)
 }
 

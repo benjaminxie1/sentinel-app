@@ -149,12 +149,16 @@ export const useCameraManager = () => {
     try {
       const { cameraId, rtspUrl, username, password } = cameraConfig;
       
+      console.log('Testing camera connection:', { cameraId, rtspUrl });
+      
       const result = await testCamera({
         camera_id: cameraId || 'test',
         rtsp_url: rtspUrl,
         username,
         password
       });
+      
+      console.log('Camera test result:', result);
       
       return {
         success: result?.success || false,
