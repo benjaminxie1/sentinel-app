@@ -464,3 +464,4 @@ if __name__ == "__main__":
         print(f"❌ Fire detector test failed: {e}")
         import traceback
         traceback.print_exc()
+
