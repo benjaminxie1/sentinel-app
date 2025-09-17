@@ -1,6 +1,7 @@
 # Sentinel Fire Detection System
 
 A supplementary fire detection system using computer vision. **Does NOT replace certified fire alarm systems.**
+
 UPDATE 8/17 PUBLIC MODEL LINK(92.2% mAP@50): https://app.roboflow.com/sentinel-eqbrk/sentinel-model-oyq5c/models/sentinel-model-oyq5c/1 
 
 ## Requirements
