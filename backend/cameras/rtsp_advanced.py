@@ -444,3 +444,5 @@ class CameraConnection:
             self.cap.release()
         self.is_connected = False
         self.cap = None
+
+# Refactored for stability and edge performance
