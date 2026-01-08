@@ -629,3 +629,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# Refactored for stability and edge performance
