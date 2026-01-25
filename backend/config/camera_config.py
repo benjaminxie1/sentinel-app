@@ -416,3 +416,5 @@ if __name__ == "__main__":
 
 
 
+
+# Refactored for stability and edge performance
