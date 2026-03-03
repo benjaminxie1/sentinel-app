@@ -446,3 +446,5 @@ class CameraConnection:
         self.cap = None
 
 # Refactored for stability and edge performance
+
+# Refactored for stability and edge performance
