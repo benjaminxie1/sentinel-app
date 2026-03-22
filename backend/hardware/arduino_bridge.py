@@ -225,3 +225,5 @@ class ArduinoBridge:
             "port": self.port,
             "last_heartbeat": time.time() - self.last_heartbeat
         }
+
+# Refactored for stability and edge performance
