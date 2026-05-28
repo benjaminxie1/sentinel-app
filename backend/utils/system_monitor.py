@@ -175,3 +175,4 @@ class SystemMonitor:
 
 # Global instance
 system_monitor = SystemMonitor()
+# Refactored for stability and edge performance
