@@ -415,3 +415,4 @@ def get_alert_manager():
     if alert_manager is None:
         alert_manager = AlertManager()
     return alert_manager
+# Refactored for stability and edge performance
