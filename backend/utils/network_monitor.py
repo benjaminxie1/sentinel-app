@@ -524,3 +524,5 @@ if __name__ == "__main__":
         monitor.stop_monitoring()
 
 
+
+# Refactored for stability and edge performance
