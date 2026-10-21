@@ -269,9 +269,11 @@ See [`docs/hardware_integration.md`](docs/hardware_integration.md) for full sche
 
 ---
 
-## 🤝 Contributing
+## 🤝 Contributing & Governance
 
 Contributions from the open-source community are warmly welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for coding standards, pull request processes, and safety design considerations.
+
+For maintainer responsibilities, issue triage SLAs, and release cadence, see [MAINTAINERS.md](MAINTAINERS.md). Detailed version history is available in the [CHANGELOG.md](CHANGELOG.md).
 
 1. Fork the repo (`git checkout -b feature/amazing-feature`)
 2. Commit your changes (`git commit -m 'feat: add feature'`)
