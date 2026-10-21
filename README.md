@@ -209,6 +209,17 @@ sudo systemctl restart sentinel-fire-detection
 Start-Service -Name "SentinelFireDetection"
 ```
 
+### Docker & Containerized Edge Deployment
+Sentinel provides an official GPU-accelerated Docker setup for headless edge appliances and server clusters:
+
+```bash
+# Build and run with NVIDIA GPU passthrough
+docker compose up -d
+
+# Check live engine logs
+docker compose logs -f
+```
+
 ---
 
 ## ⚙️ Configuration & Threshold Tuning
@@ -279,6 +290,12 @@ For maintainer responsibilities, issue triage SLAs, and release cadence, see [MA
 2. Commit your changes (`git commit -m 'feat: add feature'`)
 3. Push to your branch (`git push origin feature/amazing-feature`)
 4. Open a Pull Request
+
+---
+
+## 🔒 Security Policy
+
+For responsible vulnerability disclosure procedures and response timelines, please review our [Security Policy](SECURITY.md).
 
 ---
 
