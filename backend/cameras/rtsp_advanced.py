@@ -107,6 +107,22 @@ class RTSPAdvanced:
         }
     }
     
+    @staticmethod
+    def downsample_frame_if_needed(frame: np.ndarray, max_dimension: int = 1280) -> np.ndarray:
+        """
+        Downsamples high-resolution frames (e.g. 4K) to target max dimension
+        to minimize GPU VRAM consumption while preserving bounding box precision.
+        """
+        if frame is None:
+            return None
+        height, width = frame.shape[:2]
+        if max(height, width) <= max_dimension:
+            return frame
+        scale = max_dimension / float(max(height, width))
+        new_w = int(width * scale)
+        new_h = int(height * scale)
+        return cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.cameras: Dict[str, 'CameraConnection'] = {}
