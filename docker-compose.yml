@@ -1,0 +1,21 @@
+services:
+  sentinel-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sentinel-engine
+    restart: unless-stopped
+    network_mode: "host"
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/var/log/sentinel
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
